@@ -4,6 +4,7 @@ import numpy as np
 from mo.front.common.replacement import FrontReplacementSubgraph
 from mo.graph.graph import Graph
 from mo_extensions.ops.MaxPoolGrad import MaxPoolGrad
+from mo.front.onnx.extractors.utils import onnx_attr
 
 class MaxUnpool(FrontReplacementSubgraph):
     enabled = True
@@ -39,3 +40,7 @@ class MaxUnpool(FrontReplacementSubgraph):
         # Inputs: [max_pool_input, max_pool_output, unpool_input]
         res = MaxPoolGrad(graph, dict(name=unpool.name + '/fused')).create_node([max_pool_input, max_pool, unpool_input])
         unpool.out_port(0).get_connection().set_source(res.out_port(0))
+
+        output_size = onnx_attr(unpool, 'output_size', 'ints', default=None)
+        if output_size:
+            MaxPoolGrad.update_node_stat(res, attrs = { 'output_size': output_size })
