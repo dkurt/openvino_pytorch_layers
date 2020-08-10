@@ -1,0 +1,5 @@
+torch==1.4.0
+onnx
+numpy
+networkx
+defusedxml
