@@ -16,5 +16,5 @@ out = next(iter(out.values()))
 maxdiff = np.max(np.abs(ref - out))
 print('Reference range: [{}, {}]'.format(np.min(ref), np.max(ref)))
 print('Maximal difference:', maxdiff)
-if maxdiff > 0.0:
+if maxdiff > 1e-6:
     exit(1)
