@@ -15,8 +15,6 @@ So following this guide you will learn
 
 ## Get ONNX model
 
-(tested with `torch==1.4.0`)
-
 MaxUnpool layer in PyTorch takes two inputs - input `features` from any layer and `indices` after MaxPool layer:
 
 ```python
