@@ -14,10 +14,10 @@ class MyModel(nn.Module):
     def forward(self, x):
         output, indices = self.pool(x)
         conv = self.conv(output)
-        return self.unpool.apply(conv, indices)
+        return self.unpool.apply(conv, indices, torch.Size([5, 3, 6, 9]))
 
 
-inp = Variable(torch.randn(5, 3, 10, 12))
+inp = Variable(torch.randn(5, 3, 6, 8))
 model = MyModel()
 model.eval()
 

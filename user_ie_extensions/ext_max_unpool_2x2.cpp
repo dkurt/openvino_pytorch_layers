@@ -68,31 +68,26 @@ public:
         std::vector<size_t> poolOutDims = inputs[1]->getTensorDesc().getDims();
         std::vector<size_t> inpDims = inputs[2]->getTensorDesc().getDims();
         std::vector<size_t> outDims = outputs[0]->getTensorDesc().getDims();
-        if (poolInpDims[0] != poolOutDims[0] || poolInpDims[1] != poolOutDims[1] ||
-            poolInpDims[2] != 2*poolOutDims[2] || poolInpDims[3] != 2*poolOutDims[3] ||
-            inpDims[0] != poolOutDims[0] || inpDims[1] != poolOutDims[1] ||
-            inpDims[2] != poolOutDims[2] || inpDims[3] != poolOutDims[3] ||
-            poolInpDims[0] != outDims[0] || poolInpDims[1] != outDims[1] ||
-            poolInpDims[2] != outDims[2] || poolInpDims[3] != outDims[3])
-                THROW_IE_EXCEPTION << "Incorrect dimensions at MaxUnpool";
 
         const size_t batch    = poolInpDims[0];
         const size_t channels = poolInpDims[1];
         const size_t height   = poolInpDims[2];
         const size_t width    = poolInpDims[3];
+        const size_t outHeight = outDims[2];
+        const size_t outWidth  = outDims[3];
         const size_t poolOutHeight = poolOutDims[2];
         const size_t poolOutWidth  = poolOutDims[3];
         std::fill(mask.begin(), mask.end(), false);
+        memset(out, 0, outputs[0]->byteSize());
         parallel_for(batch*channels, [&](size_t d) {
             for (int y = 0; y < height; ++y) {
                 for (int x = 0; x < width; ++x) {
-                    int srcIdx = (d * poolOutHeight + y / 2) * poolOutWidth + x / 2;
-                    int dstIdx = (d * height + y) * width + x;
-                    if (fabs(poolInp[dstIdx] - poolOut[srcIdx]) < 1e-5f && !mask[srcIdx]) {
-                        out[dstIdx] = inp[srcIdx];
-                        mask[srcIdx] = true;
-                    } else {
-                        out[dstIdx] = 0.0f;
+                    int poolOutIdx = (d * poolOutHeight + y / 2) * poolOutWidth + x / 2;
+                    int poolInpIdx = (d * height + y) * width + x;
+                    int dstIdx = d * outHeight * outWidth + (y * width + x);
+                    if (fabs(poolInp[poolInpIdx] - poolOut[poolOutIdx]) < 1e-5f && !mask[poolOutIdx]) {
+                        out[dstIdx] = inp[poolOutIdx];
+                        mask[poolOutIdx] = true;
                     }
                 }
             }
