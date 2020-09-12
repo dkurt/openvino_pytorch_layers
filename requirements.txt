@@ -3,3 +3,4 @@ onnx
 numpy
 networkx
 defusedxml
+test-generator==0.1.1
