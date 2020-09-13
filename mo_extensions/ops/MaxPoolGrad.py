@@ -22,3 +22,8 @@ class MaxPoolGrad(Op):
             'out_ports_count': 1,
             'infer': shape_infer
         }, attrs)
+
+    def supported_attrs(self):
+        return [
+            'output_size'
+        ]
