@@ -15,7 +15,7 @@ OpImplementation::OpImplementation(const std::shared_ptr<ngraph::Node> &node) {
         auto castedNode = std::dynamic_pointer_cast<Operation>(node);
         if (!castedNode)
             THROW_IE_EXCEPTION << "Cannot create implementation for unknown operation!";
-        if (castedNode->inputs().size() != 3 || castedNode->outputs().size() != 1)
+        if (castedNode->inputs().size() != 4 || castedNode->outputs().size() != 1)
             THROW_IE_EXCEPTION << "Cannot create implementation for operation with incorrect number of inputs or outputs!";
         if (castedNode->get_input_partial_shape(0).is_dynamic() || castedNode->get_output_partial_shape(0).is_dynamic())
             THROW_IE_EXCEPTION << "Cannot create implementation for op with dynamic shapes!";
@@ -23,8 +23,8 @@ OpImplementation::OpImplementation(const std::shared_ptr<ngraph::Node> &node) {
             THROW_IE_EXCEPTION << "Operation supports only 4d tensors for input and output.";
         if (castedNode->get_input_element_type(0) != ngraph::element::f32 || castedNode->get_output_element_type(0) != ngraph::element::f32)
             THROW_IE_EXCEPTION << "Operation supports only FP32 tensors.";
-        inShapes.resize(3);
-        for (int i = 0; i < 3; ++i)
+        inShapes.resize(4);
+        for (int i = 0; i < 4; ++i)
             inShapes[i] = castedNode->get_input_shape(i);
         outShape = castedNode->get_output_shape(0);
 
@@ -69,7 +69,7 @@ InferenceEngine::StatusCode OpImplementation::getSupportedConfigurations(std::ve
 //! [cpu_implementation:init]
 InferenceEngine::StatusCode OpImplementation::init(InferenceEngine::LayerConfig &config, InferenceEngine::ResponseDesc *resp) noexcept {
     try {
-        if (config.inConfs.size() != 3 || config.outConfs.size() != 1) {
+        if (config.inConfs.size() != 4 || config.outConfs.size() != 1) {
             THROW_IE_EXCEPTION << "Operation cannot be initialized with incorrect number of inputs/outputs!";
         }
 

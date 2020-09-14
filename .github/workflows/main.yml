@@ -36,12 +36,6 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends intel-openvino-dev-ubuntu18-2020.4.287
 
-    - name: Export Model
-      run: python3 export_model.py
-
-    - name: Create OpenVINO IR
-      run: python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model_with_unpool.onnx --extension mo_extensions
-
     - name: Build CPU extensions
       run: |
         source /opt/intel/openvino/bin/setupvars.sh
@@ -50,7 +44,19 @@ jobs:
         mkdir build && cd build
         cmake .. -DCMAKE_BUILD_TYPE=Release && make -j$(nproc --all)
 
-    - name: Run test
+    - name: Test default parameters
       run: |
         source /opt/intel/openvino/bin/setupvars.sh
+        python3 export_model.py --mode=default
+        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model_with_unpool.onnx --extension mo_extensions
+        python3 compare.py
+
+    - name: Test dynamic shapes
+      run: |
+        source /opt/intel/openvino/bin/setupvars.sh
+        python3 export_model.py --mode=dynamic_size --shape 5 3 6 9
+        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model_with_unpool.onnx --extension mo_extensions
+        python3 compare.py
+
+        python3 export_model.py --mode=dynamic_size --shape 4 3 17 8
         python3 compare.py

@@ -18,13 +18,10 @@ public:
     Operation(const ngraph::Output<ngraph::Node>& poolInp,
               const ngraph::Output<ngraph::Node>& poolOut,
               const ngraph::Output<ngraph::Node>& inp,
-              const ngraph::Shape& outputSize = {});
+              const ngraph::Output<ngraph::Node>& shape);
     void validate_and_infer_types() override;
     std::shared_ptr<ngraph::Node> clone_with_new_inputs(const ngraph::OutputVector& new_args) const override;
     bool visit_attributes(ngraph::AttributeVisitor& visitor) override;
-
-private:
-    ngraph::Shape outputSize;
 };
 //! [op:header]
 

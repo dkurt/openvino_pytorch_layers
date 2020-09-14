@@ -1,24 +1,41 @@
 import numpy as np
+import argparse
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
 from unpool import Unpool2d
 
+np.random.seed(324)
+torch.manual_seed(32)
+
 class MyModel(nn.Module):
-    def __init__(self):
+    def __init__(self, mode):
         super(MyModel, self).__init__()
+        self.mode = mode
         self.pool = nn.MaxPool2d(2, stride=2, return_indices=True)
-        self.conv = nn.Conv2d(3, 3, kernel_size=1, stride=1)
+        self.conv1 = nn.Conv2d(3, 4, kernel_size=1, stride=1)
+        self.conv2 = nn.Conv2d(4, 4, kernel_size=1, stride=1)
         self.unpool = Unpool2d()
 
     def forward(self, x):
-        output, indices = self.pool(x)
-        conv = self.conv(output)
-        return self.unpool.apply(conv, indices, torch.Size([-1, -1, 6, 9]))
+        y = self.conv1(x)
+        output, indices = self.pool(y)
+        conv = self.conv2(output)
+        if self.mode == 'default':
+            return self.unpool.apply(conv, indices)
+        elif self.mode == 'dynamic_size':
+            return self.unpool.apply(conv, indices, x)
+        else:
+            raise Exception('Unknown mode: ' + self.mode)
 
 
-inp = Variable(torch.randn(5, 3, 6, 8))
-model = MyModel()
+parser = argparse.ArgumentParser(description='Generate ONNX model and test data')
+parser.add_argument('--mode', choices=['default', 'dynamic_size'], help='Specify Unpooling behavior')
+parser.add_argument('--shape', type=int, nargs='+', default=[5, 3, 6, 8])
+args = parser.parse_args()
+
+model = MyModel(args.mode)
+inp = Variable(torch.randn(args.shape))
 model.eval()
 
 with torch.no_grad():
