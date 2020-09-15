@@ -6,7 +6,9 @@ from mo.ops.op import Op
 def shape_infer(node):
     # Inputs: [max_pool_input, max_pool_output, unpool_input, shape]
     assert(len(node.in_nodes()) == 4)
-    node.out_node(0).shape = node.in_node(3).shape
+    node.out_node(0).shape = node.in_node(0).shape
+    node.out_node(0).shape[2] = node.in_node(3).shape[2]
+    node.out_node(0).shape[3] = node.in_node(3).shape[3]
 
 class MaxPoolGrad(Op):
     op = 'MaxPoolGrad'

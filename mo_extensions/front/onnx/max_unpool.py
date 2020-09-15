@@ -36,14 +36,11 @@ class MaxUnpool(FrontReplacementSubgraph):
 
         # Inputs: [max_pool_input, max_pool_output, unpool_input, shape]
         inputs = [max_pool_input, max_pool, unpool_input]
-        if len(unpool.in_ports()) == 3:
-            inputs.append(unpool.in_port(2).get_source().node)
-        else:
-            inputs.append(max_pool_input)
 
         res = MaxPoolGrad(graph, dict(name=unpool.name + '/fused')).create_node(inputs)
         unpool.out_port(0).get_connection().set_source(res.out_port(0))
 
-        output_size = onnx_attr(unpool, 'output_size', 'ints', default=None)
-        if output_size:
-            MaxPoolGrad.update_node_stat(res, attrs = { 'output_size': output_size })
+        if len(unpool.in_ports()) == 3:
+            unpool.in_port(2).get_source().connect(res.in_port(3))
+        else:
+            max_pool_input.out_port(0).connect(res.in_port(3))
