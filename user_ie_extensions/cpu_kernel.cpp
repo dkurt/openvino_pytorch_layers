@@ -116,7 +116,6 @@ InferenceEngine::StatusCode OpImplementation::execute(std::vector<InferenceEngin
     const size_t poolOutHeight = poolOutDims[2];
     const size_t poolOutWidth  = poolOutDims[3];
     std::fill(mask.begin(), mask.end(), false);
-    memset(out, 0, outputs[0]->byteSize());
     InferenceEngine::parallel_for(batch*channels, [&](size_t d) {
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
@@ -126,6 +125,8 @@ InferenceEngine::StatusCode OpImplementation::execute(std::vector<InferenceEngin
                 if (fabs(poolInp[poolInpIdx] - poolOut[poolOutIdx]) < 1e-5f && !mask[poolOutIdx]) {
                     out[dstIdx] = inp[poolOutIdx];
                     mask[poolOutIdx] = true;
+                } else {
+                    out[dstIdx] = 0;
                 }
             }
         }
