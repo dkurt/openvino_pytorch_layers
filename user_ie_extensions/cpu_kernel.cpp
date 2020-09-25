@@ -27,8 +27,6 @@ OpImplementation::OpImplementation(const std::shared_ptr<ngraph::Node> &node) {
         for (int i = 0; i < 4; ++i)
             inShapes[i] = castedNode->get_input_shape(i);
         outShape = castedNode->get_output_shape(0);
-
-        mask.resize(inShapes[1][0]*inShapes[1][1]*inShapes[1][2]*inShapes[1][3]);
     } catch (InferenceEngine::details::InferenceEngineException& ex) {
         error = ex.what();
     }
@@ -115,16 +113,14 @@ InferenceEngine::StatusCode OpImplementation::execute(std::vector<InferenceEngin
     const size_t outWidth  = outDims[3];
     const size_t poolOutHeight = poolOutDims[2];
     const size_t poolOutWidth  = poolOutDims[3];
-    std::fill(mask.begin(), mask.end(), false);
     InferenceEngine::parallel_for(batch*channels, [&](size_t d) {
-        for (int y = 0; y < height; ++y) {
-            for (int x = 0; x < width; ++x) {
+        for (int y = height - 1; y >= 0; --y) {
+            for (int x = width - 1; x >= 0; --x) {
                 int poolOutIdx = (d * poolOutHeight + y / 2) * poolOutWidth + x / 2;
                 int poolInpIdx = (d * height + y) * width + x;
                 int dstIdx = d * outHeight * outWidth + (y * width + x);
-                if (fabs(poolInp[poolInpIdx] - poolOut[poolOutIdx]) < 1e-5f && !mask[poolOutIdx]) {
+                if (fabs(poolInp[poolInpIdx] - poolOut[poolOutIdx]) < 1e-6f) {
                     out[dstIdx] = inp[poolOutIdx];
-                    mask[poolOutIdx] = true;
                 } else {
                     out[dstIdx] = 0;
                 }

@@ -24,7 +24,6 @@ private:
     std::vector<ngraph::Shape> inShapes;
     ngraph::Shape outShape;
     std::string error;
-    std::vector<bool> mask;
 };
 //! [cpu_implementation:header]
 
