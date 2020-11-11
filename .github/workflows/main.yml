@@ -56,7 +56,18 @@ jobs:
         source /opt/intel/openvino/bin/setupvars.sh
         python3 examples/unpool/export_model.py --mode=dynamic_size --shape 5 3 6 9
         python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
-        python3 examples/unpool/compare.py
+        python3 compare.py
 
         python3 examples/unpool/export_model.py --mode=dynamic_size --shape 4 3 17 8
+        python3 compare.py
+
+
+    - name: (Test FFT) 2D
+      run: |
+        source /opt/intel/openvino/bin/setupvars.sh
+        python3 examples/fft/export_model.py --shape 3 5 240 320 2
+        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
+        python3 compare.py
+
+        python3 examples/fft/export_model.py --shape 3 7 140 100 2
         python3 compare.py

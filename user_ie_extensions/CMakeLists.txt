@@ -8,6 +8,7 @@ set(TARGET_NAME "user_cpu_extension")
 find_package(ngraph REQUIRED)
 find_package(InferenceEngine REQUIRED)
 find_package(TBB REQUIRED tbb tbbmalloc)
+find_package(OpenCV REQUIRED)
 
 file(GLOB_RECURSE SRC *.cpp)
 
@@ -16,5 +17,6 @@ add_library(${TARGET_NAME} SHARED ${SRC})
 target_compile_definitions(${TARGET_NAME} PRIVATE IMPLEMENT_INFERENCE_EXTENSION_API)
 target_link_libraries(${TARGET_NAME} PRIVATE ${InferenceEngine_LIBRARIES}
                                              ${NGRAPH_LIBRARIES}
+                                             ${OpenCV_LIBRARIES}
                                              ${TBB_IMPORTED_TARGETS})
 # [cmake:extension]
