@@ -1,13 +1,14 @@
 Repository with guides to enable some layers from PyTorch in Intel OpenVINO:
 
-[![CI](https://github.com/dkurt/openvino_pytorch_unpool/workflows/CI/badge.svg?branch=master)](https://github.com/dkurt/openvino_pytorch_unpool/actions?query=branch%3Amaster)
+[![CI](https://github.com/dkurt/openvino_pytorch_layers/workflows/CI/badge.svg?branch=master)](https://github.com/dkurt/openvino_pytorch_layers/actions?query=branch%3Amaster)
 
 * [nn.MaxUnpool2d](examples/unpool)
+* [torch.fft](examples/fft)
 
 
 ## OpenVINO Model Optimizer extension
 
-To create OpenVINO IR, use extra `--extension` flag to specify a path to Model Optimizer extensions that perform graph transformations and register unpooling layer.
+To create OpenVINO IR, use extra `--extension` flag to specify a path to Model Optimizer extensions that perform graph transformations and register custom layers.
 
 ```bash
 python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py \

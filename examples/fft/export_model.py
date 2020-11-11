@@ -14,7 +14,7 @@ class MyModel(nn.Module):
         self.fft = FFT()
 
     def forward(self, x):
-        return self.fft(x)
+        return self.fft.apply(x)
 
 parser = argparse.ArgumentParser(description='Generate ONNX model and test data')
 parser.add_argument('--shape', type=int, nargs='+', default=[5, 3, 6, 8])
