@@ -91,21 +91,42 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
 
     CV_CheckEQ(inp.size[inp.dims - 1], 2, "");
 
-    const int batch = inp.size[0];
-    const int channels = inp.size[1];
-    const int rows = inp.size[2];
-    const int cols = inp.size[3];
-    inp = inp.reshape(1, batch * channels);
-    out = out.reshape(1, batch * channels);
-    InferenceEngine::parallel_for(batch * channels, [&](size_t d) {
-        cv::Mat inpSlice(rows, cols, CV_32FC2, inp.ptr<float>(d));
-        cv::Mat outSlice(rows, cols, CV_32FC2, out.ptr<float>(d));
+    if (inp.dims == 5) {
+        const int batch = inp.size[0];
+        const int channels = inp.size[1];
+        int rows = inp.size[2];
+        int cols = inp.size[3];
+        inp = inp.reshape(1, batch * channels);
+        out = out.reshape(1, batch * channels);
+        InferenceEngine::parallel_for(batch * channels, [&](size_t d) {
+            cv::Mat inpSlice(rows, cols, CV_32FC2, inp.ptr<float>(d));
+            cv::Mat outSlice(rows, cols, CV_32FC2, out.ptr<float>(d));
+            if (inverse)
+                cv::idft(inpSlice, outSlice);
+            else
+                cv::dft(inpSlice, outSlice);
+        });
+        out /= sqrtf(cols * rows);
+    } else {
+        int rows, cols;
+        if (inp.dims == 4) {
+            rows = inp.size[0] * inp.size[1];
+            cols = inp.size[2];
+        } else if (inp.dims == 3) {
+            rows = inp.size[0];
+            cols = inp.size[1];
+        } else {
+            CV_Assert(inp.dims == 3 || inp.dims == 4);
+        }
+        inp = cv::Mat(rows, cols, CV_32FC2, inp.ptr<float>());
+        out = cv::Mat(rows, cols, CV_32FC2, out.ptr<float>());
+
         if (inverse)
-            cv::idft(inpSlice, outSlice);
+            cv::idft(inp, out, cv::DFT_ROWS);
         else
-            cv::dft(inpSlice, outSlice);
-    });
-    out /= sqrtf(cols * rows);
+            cv::dft(inp, out, cv::DFT_ROWS);
+        out /= sqrtf(cols);
+    }
 
     return InferenceEngine::OK;
 }

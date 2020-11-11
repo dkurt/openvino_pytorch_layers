@@ -12,11 +12,10 @@ class MyModel(nn.Module):
     def __init__(self):
         super(MyModel, self).__init__()
         self.fft = FFT()
-        self.conv = nn.Conv3d(args.shape[1], args.shape[1], kernel_size=1, stride=1)
 
     def forward(self, x):
         y = self.fft.apply(x, False)
-        y = self.conv(y)
+        y = y * 2
         y = self.fft.apply(y, True)
         return y
 
