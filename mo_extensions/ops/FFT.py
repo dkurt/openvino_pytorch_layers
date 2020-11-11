@@ -15,3 +15,6 @@ class FFT(Op):
             'out_ports_count': 1,
             'infer': copy_shape_infer
         }, attrs)
+
+    def supported_attrs(self):
+        return ['inverse']

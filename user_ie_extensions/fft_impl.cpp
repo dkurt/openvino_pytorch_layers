@@ -24,6 +24,7 @@ FFTImpl::FFTImpl(const std::shared_ptr<ngraph::Node> &node) {
         THROW_IE_EXCEPTION << "Operation supports only FP32 tensors.";
     inpShape = castedNode->get_input_shape(0);
     outShape = castedNode->get_output_shape(0);
+    inverse = castedNode->inverse;
 }
 //! [cpu_implementation:ctor]
 
@@ -99,7 +100,10 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
     InferenceEngine::parallel_for(batch * channels, [&](size_t d) {
         cv::Mat inpSlice(rows, cols, CV_32FC2, inp.ptr<float>(d));
         cv::Mat outSlice(rows, cols, CV_32FC2, out.ptr<float>(d));
-        cv::dft(inpSlice, outSlice);
+        if (inverse)
+            cv::idft(inpSlice, outSlice);
+        else
+            cv::dft(inpSlice, outSlice);
     });
     out /= sqrtf(cols * rows);
 

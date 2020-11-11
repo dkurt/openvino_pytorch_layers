@@ -39,6 +39,7 @@ public:
 private:
     ngraph::Shape inpShape;
     ngraph::Shape outShape;
+    bool inverse;
     std::string error;
 };
 //! [cpu_implementation:header]

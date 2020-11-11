@@ -12,12 +12,16 @@ class MyModel(nn.Module):
     def __init__(self):
         super(MyModel, self).__init__()
         self.fft = FFT()
+        self.conv = nn.Conv3d(args.shape[1], args.shape[1], kernel_size=1, stride=1)
 
     def forward(self, x):
-        return self.fft.apply(x)
+        y = self.fft.apply(x, False)
+        y = self.conv(y)
+        y = self.fft.apply(y, True)
+        return y
 
 parser = argparse.ArgumentParser(description='Generate ONNX model and test data')
-parser.add_argument('--shape', type=int, nargs='+', default=[5, 3, 6, 8])
+parser.add_argument('--shape', type=int, nargs='+', default=[5, 3, 6, 8, 2])
 args = parser.parse_args()
 
 model = MyModel()

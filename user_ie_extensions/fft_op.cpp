@@ -8,8 +8,9 @@ using namespace TemplateExtension;
 constexpr ngraph::NodeTypeInfo FFTOp::type_info;
 
 //! [op:ctor]
-FFTOp::FFTOp(const ngraph::Output<ngraph::Node>& inp) : Op({inp}) {
+FFTOp::FFTOp(const ngraph::Output<ngraph::Node>& inp, bool _inverse) : Op({inp}) {
     constructor_validate_and_infer_types();
+    inverse = _inverse;
 }
 //! [op:ctor]
 
@@ -25,12 +26,13 @@ std::shared_ptr<ngraph::Node> FFTOp::clone_with_new_inputs(const ngraph::OutputV
     if (new_args.size() != 1) {
         throw ngraph::ngraph_error("Incorrect number of new arguments");
     }
-    return std::make_shared<FFTOp>(new_args.at(0));
+    return std::make_shared<FFTOp>(new_args.at(0), inverse);
 }
 //! [op:copy]
 
 //! [op:visit_attributes]
 bool FFTOp::visit_attributes(ngraph::AttributeVisitor &visitor) {
+    visitor.on_attribute("inverse", inverse);
     return true;
 }
 //! [op:visit_attributes]

@@ -2,11 +2,15 @@ import torch
 
 class FFT(torch.autograd.Function):
     @staticmethod
-    def symbolic(g, x):
-        return g.op('FFT', x)
+    def symbolic(g, x, inverse):
+        return g.op('FFT', x,
+                    inverse_i=inverse)
 
     @staticmethod
-    def forward(self, x):
+    def forward(self, x, inverse):
         # https://pytorch.org/docs/stable/torch.html#torch.fft
-        y = torch.fft(input=x, signal_ndim=2, normalized=True)
+        if inverse:
+            y = torch.ifft(input=x, signal_ndim=2, normalized=True)
+        else:
+            y = torch.fft(input=x, signal_ndim=2, normalized=True)
         return y
