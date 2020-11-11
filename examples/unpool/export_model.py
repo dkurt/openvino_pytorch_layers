@@ -39,7 +39,7 @@ inp = Variable(torch.randn(args.shape))
 model.eval()
 
 with torch.no_grad():
-    torch.onnx.export(model, inp, 'model_with_unpool.onnx',
+    torch.onnx.export(model, inp, 'model.onnx',
                       input_names=['input'],
                       output_names=['output'],
                       operator_export_type=torch.onnx.OperatorExportTypes.ONNX_ATEN_FALLBACK)
