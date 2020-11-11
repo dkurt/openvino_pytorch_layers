@@ -10,9 +10,9 @@
 namespace TemplateExtension {
 
 //! [cpu_implementation:header]
-class OpImplementation : public InferenceEngine::ILayerExecImpl {
+class UnpoolImpl : public InferenceEngine::ILayerExecImpl {
 public:
-    explicit OpImplementation(const std::shared_ptr<ngraph::Node>& node);
+    explicit UnpoolImpl(const std::shared_ptr<ngraph::Node>& node);
     InferenceEngine::StatusCode getSupportedConfigurations(std::vector<InferenceEngine::LayerConfig> &conf,
                                                            InferenceEngine::ResponseDesc *resp) noexcept override;
     InferenceEngine::StatusCode init(InferenceEngine::LayerConfig &config,
@@ -23,6 +23,23 @@ public:
 private:
     std::vector<ngraph::Shape> inShapes;
     ngraph::Shape outShape;
+    std::string error;
+};
+
+class FFTImpl : public InferenceEngine::ILayerExecImpl {
+public:
+    explicit FFTImpl(const std::shared_ptr<ngraph::Node>& node);
+    InferenceEngine::StatusCode getSupportedConfigurations(std::vector<InferenceEngine::LayerConfig> &conf,
+                                                           InferenceEngine::ResponseDesc *resp) noexcept override;
+    InferenceEngine::StatusCode init(InferenceEngine::LayerConfig &config,
+                                     InferenceEngine::ResponseDesc *resp) noexcept override;
+    InferenceEngine::StatusCode execute(std::vector<InferenceEngine::Blob::Ptr> &inputs,
+                                        std::vector<InferenceEngine::Blob::Ptr> &outputs,
+                                        InferenceEngine::ResponseDesc *resp) noexcept override;
+private:
+    ngraph::Shape inpShape;
+    ngraph::Shape outShape;
+    bool inverse;
     std::string error;
 };
 //! [cpu_implementation:header]

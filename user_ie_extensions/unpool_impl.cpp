@@ -10,9 +10,9 @@
 using namespace TemplateExtension;
 
 //! [cpu_implementation:ctor]
-OpImplementation::OpImplementation(const std::shared_ptr<ngraph::Node> &node) {
+UnpoolImpl::UnpoolImpl(const std::shared_ptr<ngraph::Node> &node) {
     try {
-        auto castedNode = std::dynamic_pointer_cast<Operation>(node);
+        auto castedNode = std::dynamic_pointer_cast<UnpoolOp>(node);
         if (!castedNode)
             THROW_IE_EXCEPTION << "Cannot create implementation for unknown operation!";
         if (castedNode->inputs().size() != 4 || castedNode->outputs().size() != 1)
@@ -34,7 +34,7 @@ OpImplementation::OpImplementation(const std::shared_ptr<ngraph::Node> &node) {
 //! [cpu_implementation:ctor]
 
 //! [cpu_implementation:getSupportedConfigurations]
-InferenceEngine::StatusCode OpImplementation::getSupportedConfigurations(std::vector<InferenceEngine::LayerConfig> &conf,
+InferenceEngine::StatusCode UnpoolImpl::getSupportedConfigurations(std::vector<InferenceEngine::LayerConfig> &conf,
                                                                          InferenceEngine::ResponseDesc *resp) noexcept {
      std::vector<InferenceEngine::DataConfig> inDataConfig;
      std::vector<InferenceEngine::DataConfig> outDataConfig;
@@ -65,7 +65,7 @@ InferenceEngine::StatusCode OpImplementation::getSupportedConfigurations(std::ve
 //! [cpu_implementation:getSupportedConfigurations]
 
 //! [cpu_implementation:init]
-InferenceEngine::StatusCode OpImplementation::init(InferenceEngine::LayerConfig &config, InferenceEngine::ResponseDesc *resp) noexcept {
+InferenceEngine::StatusCode UnpoolImpl::init(InferenceEngine::LayerConfig &config, InferenceEngine::ResponseDesc *resp) noexcept {
     try {
         if (config.inConfs.size() != 4 || config.outConfs.size() != 1) {
             THROW_IE_EXCEPTION << "Operation cannot be initialized with incorrect number of inputs/outputs!";
@@ -92,7 +92,7 @@ InferenceEngine::StatusCode OpImplementation::init(InferenceEngine::LayerConfig 
 //! [cpu_implementation:init]
 
 //! [cpu_implementation:execute]
-InferenceEngine::StatusCode OpImplementation::execute(std::vector<InferenceEngine::Blob::Ptr> &inputs,
+InferenceEngine::StatusCode UnpoolImpl::execute(std::vector<InferenceEngine::Blob::Ptr> &inputs,
                                                       std::vector<InferenceEngine::Blob::Ptr> &outputs,
                                                       InferenceEngine::ResponseDesc *resp) noexcept {
     const float* poolInp = inputs[0]->cbuffer().as<float*>();

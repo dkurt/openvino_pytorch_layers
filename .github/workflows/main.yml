@@ -44,19 +44,32 @@ jobs:
         mkdir build && cd build
         cmake .. -DCMAKE_BUILD_TYPE=Release && make -j$(nproc --all)
 
-    - name: Test default parameters
+    - name: (Test Unpool) default parameters
       run: |
         source /opt/intel/openvino/bin/setupvars.sh
-        python3 export_model.py --mode=default
-        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model_with_unpool.onnx --extension mo_extensions
+        python3 examples/unpool/export_model.py --mode=default
+        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
         python3 compare.py
 
-    - name: Test dynamic shapes
+    - name: (Test Unpool) Test dynamic shapes
       run: |
         source /opt/intel/openvino/bin/setupvars.sh
-        python3 export_model.py --mode=dynamic_size --shape 5 3 6 9
-        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model_with_unpool.onnx --extension mo_extensions
+        python3 examples/unpool/export_model.py --mode=dynamic_size --shape 5 3 6 9
+        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
         python3 compare.py
 
-        python3 export_model.py --mode=dynamic_size --shape 4 3 17 8
+        python3 examples/unpool/export_model.py --mode=dynamic_size --shape 4 3 17 8
+        python3 compare.py
+
+
+    - name: (Test FFT)
+      run: |
+        source /opt/intel/openvino/bin/setupvars.sh
+        for shape in "5 120 2" "4 240 320 2" "3 5 240 320 2"; do
+          python3 examples/fft/export_model.py --shape ${shape}
+          python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
+          python3 compare.py
+        done
+
+        python3 examples/fft/export_model.py --shape 3 7 140 100 2
         python3 compare.py
