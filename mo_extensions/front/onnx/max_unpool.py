@@ -14,7 +14,7 @@ class MaxUnpool(FrontReplacementSubgraph):
             nodes=[
                 ('max_pool0', dict(op='MaxPool')),
                 ('max_pool1', dict(op='MaxPool')),
-                ('slice', dict(op='Slice')),
+                ('slice', dict(op='AttributedSlice')),
                 ('sub', dict(op='Sub')),
                 ('unpool', dict(op='Unpooling')),
             ],
