@@ -35,6 +35,7 @@ jobs:
         sudo echo "deb https://apt.repos.intel.com/openvino/2021 all main" | sudo tee - a /etc/apt/sources.list.d/intel-openvino-2021.list
         sudo apt-get update
         sudo apt-get install -y --no-install-recommends intel-openvino-dev-ubuntu18-2021.1.110
+        sudo ln -s /opt/intel/openvino /opt/intel/openvino_2021
 
     - name: Build CPU extensions
       run: |
