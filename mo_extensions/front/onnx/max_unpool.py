@@ -3,7 +3,11 @@ import numpy as np
 
 from mo.front.common.replacement import FrontReplacementSubgraph
 from mo.graph.graph import Graph
-from mo_extensions.ops.MaxPoolGrad import MaxPoolGrad
+from extensions.ops.upsample import UpsampleOp
+from extensions.ops.activation_ops import Abs
+from extensions.ops.elementwise import Sub, Less, Mul
+from mo.ops.const import Const
+from extensions.ops.Cast import Cast
 from mo.front.onnx.extractors.utils import onnx_attr
 
 class MaxUnpool(FrontReplacementSubgraph):
@@ -34,13 +38,20 @@ class MaxUnpool(FrontReplacementSubgraph):
 
         max_pool.out_port(1).disconnect()
 
-        # Inputs: [max_pool_input, max_pool_output, unpool_input, shape]
-        inputs = [max_pool_input, max_pool, unpool_input]
+        # Resize Pooling's output
+        pool_out_resized = UpsampleOp(graph, dict(name=max_pool.name + '/resize',
+                                                  height_scale=2.0,
+                                                  width_scale=2.0,
+                                                  mode='nearest')).create_node([max_pool])
+        x_resized = UpsampleOp(graph, dict(name=unpool_input.name + '/resize',
+                                           height_scale=2.0,
+                                           width_scale=2.0,
+                                           mode='nearest')).create_node([unpool_input])
+        diff = Sub(graph, dict(name=unpool.name + '/sub')).create_node([pool_out_resized, max_pool_input])
+        abs = Abs(graph, dict(name=unpool.name + '/abs')).create_node([diff])
+        thresh = Const(graph, {'value': 1e-6}).create_node()
+        less = Less(graph, dict(name=unpool.name + '/less')).create_node([abs, thresh])
+        less = Cast(graph, dict(name=unpool.name + '/cast', dst_type=np.float32)).create_node([less])
+        res = Mul(graph, dict(name=unpool.name + '/mul')).create_node([x_resized, less])
 
-        res = MaxPoolGrad(graph, dict(name=unpool.name + '/fused')).create_node(inputs)
         unpool.out_port(0).get_connection().set_source(res.out_port(0))
-
-        if len(unpool.in_ports()) == 3:
-            unpool.in_port(2).get_source().connect(res.in_port(3))
-        else:
-            max_pool_input.out_port(0).connect(res.in_port(3))
