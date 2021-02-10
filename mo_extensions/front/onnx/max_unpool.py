@@ -7,8 +7,10 @@ from extensions.ops.upsample import UpsampleOp
 from extensions.ops.activation_ops import Abs
 from extensions.ops.elementwise import Sub, Less, Mul
 from mo.ops.const import Const
+from mo.ops.crop import Crop
 from extensions.ops.Cast import Cast
 from mo.front.onnx.extractors.utils import onnx_attr
+from mo.front.common.partial_infer.utils import int64_array
 
 class MaxUnpool(FrontReplacementSubgraph):
     enabled = True
@@ -47,6 +49,19 @@ class MaxUnpool(FrontReplacementSubgraph):
                                            height_scale=2.0,
                                            width_scale=2.0,
                                            mode='nearest')).create_node([unpool_input])
+        pool_out_resized = Crop(graph, dict(name=pool_out_resized.name + '/crop',
+                                            axis=int64_array([2]),
+                                            offset=int64_array([0]))).create_node([pool_out_resized, max_pool_input])
+        pool_out_resized = Crop(graph, dict(name=pool_out_resized.name + '/crop',
+                                            axis=int64_array([3]),
+                                            offset=int64_array([0]))).create_node([pool_out_resized, max_pool_input])
+        x_resized = Crop(graph, dict(name=x_resized.name + '/crop',
+                                     axis=int64_array([2]),
+                                     offset=int64_array([0]))).create_node([x_resized, max_pool_input])
+        x_resized = Crop(graph, dict(name=x_resized.name + '/crop',
+                                     axis=int64_array([3]),
+                                     offset=int64_array([0]))).create_node([x_resized, max_pool_input])
+
         diff = Sub(graph, dict(name=unpool.name + '/sub')).create_node([pool_out_resized, max_pool_input])
         abs = Abs(graph, dict(name=unpool.name + '/abs')).create_node([diff])
         thresh = Const(graph, {'value': 1e-6}).create_node()

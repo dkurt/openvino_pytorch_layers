@@ -12,7 +12,7 @@ class MyModel(nn.Module):
     def __init__(self, mode):
         super(MyModel, self).__init__()
         self.mode = mode
-        self.pool = nn.MaxPool2d(2, stride=2, return_indices=True)
+        self.pool = nn.MaxPool2d(2, stride=2, return_indices=True, ceil_mode=True)
         self.conv1 = nn.Conv2d(3, 4, kernel_size=1, stride=1)
         self.conv2 = nn.Conv2d(4, 4, kernel_size=1, stride=1)
         self.unpool = Unpool2d()
