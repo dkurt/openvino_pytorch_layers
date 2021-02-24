@@ -26,7 +26,8 @@ jobs:
       run: |
         sudo apt-get install -y python3-setuptools
         python3 -m pip install --upgrade pip
-        python3 -m pip install -r requirements.txt --quiet
+        python3 -m pip install -r requirements.txt
+        python3 -m pip install -U protobuf
 
     - name: Install Intel OpenVINO
       run: |
@@ -37,40 +38,73 @@ jobs:
         sudo apt-get install -y --no-install-recommends intel-openvino-dev-ubuntu18-2021.1.110
         sudo ln -s /opt/intel/openvino_2021 /opt/intel/openvino
 
-    - name: Build CPU extensions
+    - name: Install Intel oneAPI
+      run: |
+        wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+        sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+        rm GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+        echo "deb https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
+        sudo add-apt-repository "deb https://apt.repos.intel.com/oneapi all main"
+        sudo apt update
+        sudo apt-get install -y --no-install-recommends \
+          intel-oneapi-mkl-devel \
+          intel-oneapi-compiler-dpcpp-cpp \
+          intel-oneapi-advisor
+
+    - name: Build CPU extensions (OpenCV backend)
       run: |
         source /opt/intel/openvino/bin/setupvars.sh
         export TBB_DIR=/opt/intel/openvino/deployment_tools/inference_engine/external/tbb/cmake/
-        cd user_ie_extensions
         mkdir build && cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release && make -j$(nproc --all)
+        cmake ../user_ie_extensions -DCMAKE_BUILD_TYPE=Release && make -j$(nproc --all)
+
+    - name: Build CPU extensions (MKL backend)
+      run: |
+        source /opt/intel/openvino/bin/setupvars.sh
+        source /opt/intel/oneapi/setvars.sh
+
+        mkdir build_mkl && cd build_mkl
+        cmake ../user_ie_extensions -DCMAKE_BUILD_TYPE=Release -DUSE_MKL=YES -DCMAKE_CXX_COMPILER=dpcpp && make -j$(nproc --all)
 
     - name: (Test Unpool) default parameters
       run: |
         source /opt/intel/openvino/bin/setupvars.sh
         python3 examples/unpool/export_model.py --mode=default
         python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
-        python3 compare.py
+        python3 compare.py -l build/libuser_cpu_extension.so
 
     - name: (Test Unpool) Test dynamic shapes
       run: |
         source /opt/intel/openvino/bin/setupvars.sh
         python3 examples/unpool/export_model.py --mode=dynamic_size --shape 5 3 6 9
         python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
-        python3 compare.py
+        python3 compare.py -l build/libuser_cpu_extension.so
 
         python3 examples/unpool/export_model.py --mode=dynamic_size --shape 4 3 17 8
-        python3 compare.py
+        python3 compare.py -l build/libuser_cpu_extension.so
 
 
-    - name: (Test FFT)
+    - name: (Test FFT) OpenCV backend
       run: |
         source /opt/intel/openvino/bin/setupvars.sh
         for shape in "5 120 2" "4 240 320 2" "3 5 240 320 2"; do
           python3 examples/fft/export_model.py --shape ${shape}
           python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
-          python3 compare.py
+          python3 compare.py -l build/libuser_cpu_extension.so
         done
 
         python3 examples/fft/export_model.py --shape 3 7 140 100 2
-        python3 compare.py
+        python3 compare.py -l build/libuser_cpu_extension.so
+
+    - name: (Test FFT) MKL backend
+      run: |
+        source /opt/intel/openvino/bin/setupvars.sh
+        source /opt/intel/oneapi/setvars.sh
+        for shape in "5 120 2" "4 240 320 2" "3 5 240 320 2"; do
+          python3 examples/fft/export_model.py --shape ${shape}
+          python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
+          LD_PRELOAD=/opt/intel/oneapi/tbb/latest/lib/intel64/gcc4.8/libtbb.so python3 compare.py -l build_mkl/libuser_cpu_extension.so
+        done
+
+        python3 examples/fft/export_model.py --shape 3 7 140 100 2
+        LD_PRELOAD=/opt/intel/oneapi/tbb/latest/lib/intel64/gcc4.8/libtbb.so python3 compare.py -l build_mkl/libuser_cpu_extension.so

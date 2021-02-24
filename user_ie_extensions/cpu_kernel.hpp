@@ -7,6 +7,10 @@
 #include <ie_iextension.h>
 #include <ngraph/ngraph.hpp>
 
+#ifdef HAVE_MKL
+#include <oneapi/mkl.hpp>
+#endif
+
 namespace TemplateExtension {
 
 //! [cpu_implementation:header]
@@ -41,6 +45,9 @@ private:
     ngraph::Shape outShape;
     bool inverse;
     std::string error;
+#ifdef HAVE_MKL
+    DFTI_DESCRIPTOR_HANDLE desc_handle;
+#endif
 };
 //! [cpu_implementation:header]
 

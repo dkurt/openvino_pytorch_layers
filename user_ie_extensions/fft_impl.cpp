@@ -6,15 +6,14 @@
 #include <details/ie_exception.hpp>
 #include <ie_layouts.h>
 
-// #ifdef HAVE_OPENCV
+#ifdef HAVE_OPENCV
 
 #include "ie_parallel.hpp"
 #include <opencv2/opencv.hpp>
 
-// #elif HAVE_MKL
-#include <CL/sycl.hpp>
+#elif HAVE_MKL
 #include <oneapi/mkl.hpp>
-// #endif
+#endif
 
 
 using namespace TemplateExtension;
@@ -76,9 +75,62 @@ InferenceEngine::StatusCode FFTImpl::init(InferenceEngine::LayerConfig &config, 
         config.inConfs[0].desc.getPrecision() != InferenceEngine::Precision::FP32)  {
         THROW_IE_EXCEPTION << "Operation supports only FP32 precisions!";
     }
+
+#ifdef HAVE_MKL
+    if (inpShape.size() == 5) {
+        const int batch = inpShape[0];
+        const int channels = inpShape[1];
+        int rows = inpShape[2];
+        int cols = inpShape[3];
+
+        MKL_LONG fft_dims[] = {rows, cols};
+        auto status = DftiCreateDescriptor(&desc_handle,
+                                           DFTI_SINGLE /*precision*/,
+                                           DFTI_COMPLEX,
+                                           2 /*dimension*/,
+                                           fft_dims);
+        DftiSetValue(desc_handle, DFTI_PLACEMENT, DFTI_NOT_INPLACE);
+
+        DftiSetValue(desc_handle, DFTI_NUMBER_OF_TRANSFORMS, batch * channels);
+        DftiSetValue(desc_handle, DFTI_INPUT_DISTANCE, rows * cols);
+        DftiSetValue(desc_handle, DFTI_OUTPUT_DISTANCE, rows * cols);
+
+        DftiSetValue(desc_handle, DFTI_FORWARD_SCALE, 1.0f / sqrtf(cols * rows));
+        DftiSetValue(desc_handle, DFTI_BACKWARD_SCALE, 1.0f / sqrtf(cols * rows));
+    } else {
+        int rows, cols;
+        if (inpShape.size() == 4) {
+            rows = inpShape[0] * inpShape[1];
+            cols = inpShape[2];
+        } else if (inpShape.size() == 3) {
+            rows = inpShape[0];
+            cols = inpShape[1];
+        } else {
+            IE_ASSERT(inpShape.size() == 3 || inpShape.size() == 4);
+        }
+
+        auto status = DftiCreateDescriptor(&desc_handle,
+                                           DFTI_SINGLE /*precision*/,
+                                           DFTI_COMPLEX,
+                                           1 /*dimension*/,
+                                           cols);
+        DftiSetValue(desc_handle, DFTI_PLACEMENT, DFTI_NOT_INPLACE);
+
+        DftiSetValue(desc_handle, DFTI_NUMBER_OF_TRANSFORMS, rows);
+        DftiSetValue(desc_handle, DFTI_INPUT_DISTANCE, cols);
+        DftiSetValue(desc_handle, DFTI_OUTPUT_DISTANCE, cols);
+
+        DftiSetValue(desc_handle, DFTI_FORWARD_SCALE, 1.0f / sqrtf(cols));
+        DftiSetValue(desc_handle, DFTI_BACKWARD_SCALE, 1.0f / sqrtf(cols));
+    }
+    DftiCommitDescriptor(desc_handle);
+#endif
+
     return InferenceEngine::OK;
 }
 //! [cpu_implementation:init]
+
+#ifdef HAVE_OPENCV
 
 static cv::Mat infEngineBlobToMat(const InferenceEngine::Blob::Ptr& blob)
 {
@@ -89,8 +141,6 @@ static cv::Mat infEngineBlobToMat(const InferenceEngine::Blob::Ptr& blob)
     CV_Assert(precision == InferenceEngine::Precision::FP32);
     return cv::Mat(size, CV_32F, (void*)blob->buffer());
 }
-
-#ifdef HAVE_OPENCV
 
 //! [cpu_implementation:execute]
 InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::Ptr> &inputs,
@@ -140,75 +190,18 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
 
     return InferenceEngine::OK;
 }
+
 #else  // HAVE_MKL
 
 InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::Ptr> &inputs,
                                              std::vector<InferenceEngine::Blob::Ptr> &outputs,
                                              InferenceEngine::ResponseDesc *resp) noexcept {
-    cv::Mat inp = infEngineBlobToMat(inputs[0]);
-    cv::Mat out = infEngineBlobToMat(outputs[0]);
-
-
-    // DFTI_DESCRIPTOR_HANDLE desc_handle;
-    //
-    // std::vector<size_t> dims = inputs[0]->getTensorDesc().getDims();
-    // MKL_LONG fft_dims[] = {(long)dims[0], (long)dims[1]};
-    // auto status = DftiCreateDescriptor(&desc_handle,
-    //                                    DFTI_SINGLE /*precision*/,
-    //                                    DFTI_COMPLEX,
-    //                                    1 /*dimension*/,
-    //                                    120);
-    //                                    // 2 /*dimension*/,
-    //                                    // fft_dims);
-    // DftiSetValue(desc_handle, DFTI_PLACEMENT, DFTI_NOT_INPLACE);
-    //
-    // DftiSetValue(desc_handle, DFTI_NUMBER_OF_TRANSFORMS, 5);
-    // DftiSetValue(desc_handle, DFTI_INPUT_DISTANCE, 120);
-    // DftiSetValue(desc_handle, DFTI_OUTPUT_DISTANCE, 120);
-    //
-    // status = DftiCommitDescriptor(desc_handle);
-    //
-    // if (inverse)
-    //   status = DftiComputeBackward(desc_handle, inp.ptr<float>(), out.ptr<float>());
-    // else
-    //   status = DftiComputeForward(desc_handle, inp.ptr<float>(), out.ptr<float>());
-    //
-    // out /= sqrtf(120);
-
-    std::vector<size_t> dims = inputs[0]->getTensorDesc().getDims();
-
-    int rows, cols;
-    if (dims.size() == 4) {
-        rows = dims[0] * dims[1];
-        cols = dims[2];
-    } else if (dims.size() == 3) {
-        rows = dims[0];
-        cols = dims[1];
-    } else {
-        CV_Assert(dims.size() == 3 || dims.size() == 4);
-    }
-
-    DFTI_DESCRIPTOR_HANDLE desc_handle;
-    MKL_LONG fft_dims[] = {(long)dims[0], (long)dims[1]};
-    auto status = DftiCreateDescriptor(&desc_handle,
-                                       DFTI_SINGLE /*precision*/,
-                                       DFTI_COMPLEX,
-                                       1 /*dimension*/,
-                                       cols);
-    DftiSetValue(desc_handle, DFTI_PLACEMENT, DFTI_NOT_INPLACE);
-
-    DftiSetValue(desc_handle, DFTI_NUMBER_OF_TRANSFORMS, rows);
-    DftiSetValue(desc_handle, DFTI_INPUT_DISTANCE, cols);
-    DftiSetValue(desc_handle, DFTI_OUTPUT_DISTANCE, cols);
-
-    DftiSetValue(desc_handle, DFTI_FORWARD_SCALE, 1.0f / sqrtf(cols));
-    DftiSetValue(desc_handle, DFTI_BACKWARD_SCALE, 1.0f / sqrtf(cols));
-    status = DftiCommitDescriptor(desc_handle);
-
+    float* inp = inputs[0]->buffer();
+    float* out = outputs[0]->buffer();
     if (inverse)
-      status = DftiComputeBackward(desc_handle, inp.ptr<float>(), out.ptr<float>());
+        DftiComputeBackward(desc_handle, inp, out);
     else
-      status = DftiComputeForward(desc_handle, inp.ptr<float>(), out.ptr<float>());
+        DftiComputeForward(desc_handle, inp, out);
 
     return InferenceEngine::OK;
 }
