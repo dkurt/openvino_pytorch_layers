@@ -5,9 +5,17 @@
 #include "op.hpp"
 #include <details/ie_exception.hpp>
 #include <ie_layouts.h>
-#include "ie_parallel.hpp"
 
+// #ifdef HAVE_OPENCV
+
+#include "ie_parallel.hpp"
 #include <opencv2/opencv.hpp>
+
+// #elif HAVE_MKL
+#include <CL/sycl.hpp>
+#include <oneapi/mkl.hpp>
+// #endif
+
 
 using namespace TemplateExtension;
 
@@ -82,6 +90,8 @@ static cv::Mat infEngineBlobToMat(const InferenceEngine::Blob::Ptr& blob)
     return cv::Mat(size, CV_32F, (void*)blob->buffer());
 }
 
+#ifdef HAVE_OPENCV
+
 //! [cpu_implementation:execute]
 InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::Ptr> &inputs,
                                                       std::vector<InferenceEngine::Blob::Ptr> &outputs,
@@ -130,4 +140,78 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
 
     return InferenceEngine::OK;
 }
+#else  // HAVE_MKL
+
+InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::Ptr> &inputs,
+                                             std::vector<InferenceEngine::Blob::Ptr> &outputs,
+                                             InferenceEngine::ResponseDesc *resp) noexcept {
+    cv::Mat inp = infEngineBlobToMat(inputs[0]);
+    cv::Mat out = infEngineBlobToMat(outputs[0]);
+
+
+    // DFTI_DESCRIPTOR_HANDLE desc_handle;
+    //
+    // std::vector<size_t> dims = inputs[0]->getTensorDesc().getDims();
+    // MKL_LONG fft_dims[] = {(long)dims[0], (long)dims[1]};
+    // auto status = DftiCreateDescriptor(&desc_handle,
+    //                                    DFTI_SINGLE /*precision*/,
+    //                                    DFTI_COMPLEX,
+    //                                    1 /*dimension*/,
+    //                                    120);
+    //                                    // 2 /*dimension*/,
+    //                                    // fft_dims);
+    // DftiSetValue(desc_handle, DFTI_PLACEMENT, DFTI_NOT_INPLACE);
+    //
+    // DftiSetValue(desc_handle, DFTI_NUMBER_OF_TRANSFORMS, 5);
+    // DftiSetValue(desc_handle, DFTI_INPUT_DISTANCE, 120);
+    // DftiSetValue(desc_handle, DFTI_OUTPUT_DISTANCE, 120);
+    //
+    // status = DftiCommitDescriptor(desc_handle);
+    //
+    // if (inverse)
+    //   status = DftiComputeBackward(desc_handle, inp.ptr<float>(), out.ptr<float>());
+    // else
+    //   status = DftiComputeForward(desc_handle, inp.ptr<float>(), out.ptr<float>());
+    //
+    // out /= sqrtf(120);
+
+    std::vector<size_t> dims = inputs[0]->getTensorDesc().getDims();
+
+    int rows, cols;
+    if (dims.size() == 4) {
+        rows = dims[0] * dims[1];
+        cols = dims[2];
+    } else if (dims.size() == 3) {
+        rows = dims[0];
+        cols = dims[1];
+    } else {
+        CV_Assert(dims.size() == 3 || dims.size() == 4);
+    }
+
+    DFTI_DESCRIPTOR_HANDLE desc_handle;
+    MKL_LONG fft_dims[] = {(long)dims[0], (long)dims[1]};
+    auto status = DftiCreateDescriptor(&desc_handle,
+                                       DFTI_SINGLE /*precision*/,
+                                       DFTI_COMPLEX,
+                                       1 /*dimension*/,
+                                       cols);
+    DftiSetValue(desc_handle, DFTI_PLACEMENT, DFTI_NOT_INPLACE);
+
+    DftiSetValue(desc_handle, DFTI_NUMBER_OF_TRANSFORMS, rows);
+    DftiSetValue(desc_handle, DFTI_INPUT_DISTANCE, cols);
+    DftiSetValue(desc_handle, DFTI_OUTPUT_DISTANCE, cols);
+
+    DftiSetValue(desc_handle, DFTI_FORWARD_SCALE, 1.0f / sqrtf(cols));
+    DftiSetValue(desc_handle, DFTI_BACKWARD_SCALE, 1.0f / sqrtf(cols));
+    status = DftiCommitDescriptor(desc_handle);
+
+    if (inverse)
+      status = DftiComputeBackward(desc_handle, inp.ptr<float>(), out.ptr<float>());
+    else
+      status = DftiComputeForward(desc_handle, inp.ptr<float>(), out.ptr<float>());
+
+    return InferenceEngine::OK;
+}
+
+#endif
 //! [cpu_implementation:execute]

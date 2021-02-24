@@ -5,10 +5,18 @@
 # [cmake:extension]
 set(TARGET_NAME "user_cpu_extension")
 
+option(USE_MKL "Use oneMKL library for FFT implementation" OFF)
+
 find_package(ngraph REQUIRED)
 find_package(InferenceEngine REQUIRED)
-find_package(TBB REQUIRED tbb tbbmalloc)
 find_package(OpenCV REQUIRED)
+if (USE_MKL)
+  find_package(LAPACK REQUIRED)
+  add_definitions(-DHAVE_MKL=1)
+else()
+  find_package(TBB REQUIRED tbb tbbmalloc)
+  add_definitions(-DHAVE_OPENCV=1)
+endif()
 
 file(GLOB_RECURSE SRC *.cpp)
 
