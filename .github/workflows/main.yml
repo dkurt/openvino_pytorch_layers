@@ -46,7 +46,9 @@ jobs:
         echo "deb https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
         sudo add-apt-repository "deb https://apt.repos.intel.com/oneapi all main"
         sudo apt update
-        sudo apt-get install -y --no-install-recommends intel-basekit
+        sudo apt-get install -y --no-install-recommends \
+            intel-oneapi-mkl-devel \
+            intel-oneapi-compiler-dpcpp-cpp
 
     - name: Build CPU extensions (OpenCV backend)
       run: |
