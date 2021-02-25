@@ -5,9 +5,16 @@
 #include "op.hpp"
 #include <details/ie_exception.hpp>
 #include <ie_layouts.h>
-#include "ie_parallel.hpp"
 
+#ifdef HAVE_OPENCV
+
+#include "ie_parallel.hpp"
 #include <opencv2/opencv.hpp>
+
+#elif HAVE_MKL
+#include <oneapi/mkl.hpp>
+#endif
+
 
 using namespace TemplateExtension;
 
@@ -68,9 +75,62 @@ InferenceEngine::StatusCode FFTImpl::init(InferenceEngine::LayerConfig &config, 
         config.inConfs[0].desc.getPrecision() != InferenceEngine::Precision::FP32)  {
         THROW_IE_EXCEPTION << "Operation supports only FP32 precisions!";
     }
+
+#ifdef HAVE_MKL
+    if (inpShape.size() == 5) {
+        const int batch = inpShape[0];
+        const int channels = inpShape[1];
+        int rows = inpShape[2];
+        int cols = inpShape[3];
+
+        MKL_LONG fft_dims[] = {rows, cols};
+        auto status = DftiCreateDescriptor(&desc_handle,
+                                           DFTI_SINGLE /*precision*/,
+                                           DFTI_COMPLEX,
+                                           2 /*dimension*/,
+                                           fft_dims);
+        DftiSetValue(desc_handle, DFTI_PLACEMENT, DFTI_NOT_INPLACE);
+
+        DftiSetValue(desc_handle, DFTI_NUMBER_OF_TRANSFORMS, batch * channels);
+        DftiSetValue(desc_handle, DFTI_INPUT_DISTANCE, rows * cols);
+        DftiSetValue(desc_handle, DFTI_OUTPUT_DISTANCE, rows * cols);
+
+        DftiSetValue(desc_handle, DFTI_FORWARD_SCALE, 1.0f / sqrtf(cols * rows));
+        DftiSetValue(desc_handle, DFTI_BACKWARD_SCALE, 1.0f / sqrtf(cols * rows));
+    } else {
+        int rows, cols;
+        if (inpShape.size() == 4) {
+            rows = inpShape[0] * inpShape[1];
+            cols = inpShape[2];
+        } else if (inpShape.size() == 3) {
+            rows = inpShape[0];
+            cols = inpShape[1];
+        } else {
+            IE_ASSERT(inpShape.size() == 3 || inpShape.size() == 4);
+        }
+
+        auto status = DftiCreateDescriptor(&desc_handle,
+                                           DFTI_SINGLE /*precision*/,
+                                           DFTI_COMPLEX,
+                                           1 /*dimension*/,
+                                           cols);
+        DftiSetValue(desc_handle, DFTI_PLACEMENT, DFTI_NOT_INPLACE);
+
+        DftiSetValue(desc_handle, DFTI_NUMBER_OF_TRANSFORMS, rows);
+        DftiSetValue(desc_handle, DFTI_INPUT_DISTANCE, cols);
+        DftiSetValue(desc_handle, DFTI_OUTPUT_DISTANCE, cols);
+
+        DftiSetValue(desc_handle, DFTI_FORWARD_SCALE, 1.0f / sqrtf(cols));
+        DftiSetValue(desc_handle, DFTI_BACKWARD_SCALE, 1.0f / sqrtf(cols));
+    }
+    DftiCommitDescriptor(desc_handle);
+#endif
+
     return InferenceEngine::OK;
 }
 //! [cpu_implementation:init]
+
+#ifdef HAVE_OPENCV
 
 static cv::Mat infEngineBlobToMat(const InferenceEngine::Blob::Ptr& blob)
 {
@@ -130,4 +190,21 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
 
     return InferenceEngine::OK;
 }
+
+#else  // HAVE_MKL
+
+InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::Ptr> &inputs,
+                                             std::vector<InferenceEngine::Blob::Ptr> &outputs,
+                                             InferenceEngine::ResponseDesc *resp) noexcept {
+    float* inp = inputs[0]->buffer();
+    float* out = outputs[0]->buffer();
+    if (inverse)
+        DftiComputeBackward(desc_handle, inp, out);
+    else
+        DftiComputeForward(desc_handle, inp, out);
+
+    return InferenceEngine::OK;
+}
+
+#endif
 //! [cpu_implementation:execute]

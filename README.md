@@ -39,3 +39,17 @@ ie.add_extension('user_ie_extensions/build/libuser_cpu_extension.so', 'CPU')
 net = ie.read_network('model.xml', 'model.bin')
 exec_net = ie.load_network(net, 'CPU')
 ```
+
+## Use oneMKL for FFT implementation:
+
+1. Download oneAPI Base Toolkit
+2. Build
+
+```bash
+cd user_ie_extensions
+mkdir build && cd build
+
+source /opt/intel/oneapi/setvars.sh
+cmake .. -DCMAKE_BUILD_TYPE=Release -DUSE_MKL=YES -DCMAKE_CXX_COMPILER=dpcpp
+make -j$(nproc --all)
+```
