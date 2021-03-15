@@ -29,7 +29,7 @@ if args.inp_shape[3] != args.grid_shape[2]:
 
 model = MyModel()
 inp = Variable(torch.randn(args.inp_shape))
-grid = torch.Tensor(np.random.uniform(low=-1, high=1, size=args.grid_shape))
+grid = torch.Tensor(np.random.uniform(low=-2, high=2, size=args.grid_shape))
 model.eval()
 
 with torch.no_grad():

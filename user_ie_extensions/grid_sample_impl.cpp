@@ -27,6 +27,7 @@ GridSampleImpl::GridSampleImpl(const std::shared_ptr<ngraph::Node> &node) {
         for (int i = 0; i < 2; ++i)
             inShapes[i] = castedNode->get_input_shape(i);
         outShape = castedNode->get_output_shape(0);
+        zerosPlane.resize(inShapes[0][1] * inShapes[0][2] * inShapes[0][3], 0);
     } catch (InferenceEngine::details::InferenceEngineException& ex) {
         error = ex.what();
     }
@@ -110,6 +111,9 @@ InferenceEngine::StatusCode GridSampleImpl::execute(std::vector<InferenceEngine:
     const int inpWidth  = inpDims[3];
     const int inpPlane = inpHeight * inpWidth;
     const int outPlane = height * width;
+
+    float* zeros = zerosPlane.data();
+
     InferenceEngine::parallel_for(batch, [&](int d) {
         const float* inp  = inpData + d * channels * inpPlane;
         const float* grid = gridData + d * outPlane * 2;
@@ -118,24 +122,51 @@ InferenceEngine::StatusCode GridSampleImpl::execute(std::vector<InferenceEngine:
                 int offset = y * width + x;
 
                 float input_x = 0.5f * (grid[offset * 2] + 1) * (inpWidth - 1);
-                int x0 = static_cast<int>(input_x);
-                int x1 = std::min(x0 + 1, inpWidth - 1);
+                int x0 = std::floor(input_x);
+                int x1 = x0 + 1;
 
                 float input_y = 0.5f * (grid[offset * 2 + 1] + 1) * (inpHeight - 1);
-                int y0 = static_cast<int>(input_y);
-                int y1 = std::min(y0 + 1, inpHeight - 1);
+                int y0 = std::floor(input_y);
+                int y1 = y0 + 1;
 
-                const float* inp_row0 = inp + y0 * inpWidth;
-                const float* inp_row1 = inp + y1 * inpWidth;
+                const float* inp_row0 = (0 <= y0 && y0 < inpHeight) ? inp + y0 * inpWidth : zeros;
+                const float* inp_row1 = (0 <= y1 && y1 < inpHeight) ? inp + y1 * inpWidth : zeros;
                 float* out = outData + d * channels * outPlane;
-                for (int c = 0; c < channels; ++c) {
-                    out[offset] = inp_row0[x0] +
-                           (input_y - y0) * (inp_row1[x0] - inp_row0[x0]) +
-                           (input_x - x0) * (inp_row0[x1] - inp_row0[x0] +
-                           (input_y - y0) * (inp_row1[x1] - inp_row0[x1] - inp_row1[x0] + inp_row0[x0]));
-                    out += outPlane;
-                    inp_row0 += inpPlane;
-                    inp_row1 += inpPlane;
+                if ((x1 < 0 || inpWidth <= x1) && (x0 < 0 || inpWidth <= x0)) {
+                    for (int c = 0; c < channels; ++c) {
+                        out[offset] = 0;
+                        out += outPlane;
+                    }
+                }
+                else if (x1 < 0 || inpWidth <= x1) {
+                    for (int c = 0; c < channels; ++c) {
+                        out[offset] = inp_row0[x0] +
+                            (input_y - y0) * (inp_row1[x0] - inp_row0[x0]) +
+                            (input_x - x0) * (-inp_row0[x0] +
+                            (input_y - y0) * (inp_row0[x0] - inp_row1[x0]));
+                        out += outPlane;
+                        inp_row0 += inpPlane;
+                        inp_row1 += inpPlane;
+                    }
+                }
+                else if (x0 < 0 || inpWidth <= x0) {
+                    for (int c = 0; c < channels; ++c) {
+                        out[offset] =
+                            (input_x - x0) * (inp_row0[x1] + (input_y - y0) * (inp_row1[x1] - inp_row0[x1]));
+                        out += outPlane;
+                        inp_row0 += inpPlane;
+                        inp_row1 += inpPlane;
+                    }
+                } else {
+                    for (int c = 0; c < channels; ++c) {
+                        out[offset] = inp_row0[x0] +
+                            (input_y - y0) * (inp_row1[x0] - inp_row0[x0]) +
+                            (input_x - x0) * (inp_row0[x1] - inp_row0[x0] +
+                            (input_y - y0) * (inp_row1[x1] - inp_row0[x1] - inp_row1[x0] + inp_row0[x0]));
+                        out += outPlane;
+                        inp_row0 += inpPlane;
+                        inp_row1 += inpPlane;
+                    }
                 }
             }
         }

@@ -57,6 +57,7 @@ private:
     std::vector<ngraph::Shape> inShapes;
     ngraph::Shape outShape;
     std::string error;
+    std::vector<float> zerosPlane;
 };
 //! [cpu_implementation:header]
 
