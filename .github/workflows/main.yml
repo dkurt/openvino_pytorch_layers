@@ -26,7 +26,7 @@ jobs:
       run: |
         sudo apt-get install -y python3-setuptools
         python3 -m pip install --upgrade pip
-        python3 -m pip install -r requirements.txt --quiet
+        python3 -m pip install -r requirements.txt
 
     - name: Install Intel OpenVINO
       run: |
@@ -74,3 +74,10 @@ jobs:
 
         python3 examples/fft/export_model.py --shape 3 7 140 100 2
         python3 compare.py
+
+    - name: (Test GridSample)
+      run: |
+        source /opt/intel/openvino/bin/setupvars.sh
+        python3 examples/grid_sample/export_model.py
+        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
+        python3 compare.py --num_inputs 2
