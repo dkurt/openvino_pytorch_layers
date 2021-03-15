@@ -111,7 +111,7 @@ InferenceEngine::StatusCode GridSampleImpl::execute(std::vector<InferenceEngine:
     const int inpPlane = inpHeight * inpWidth;
     const int outPlane = height * width;
     InferenceEngine::parallel_for(batch, [&](int d) {
-        const float* inp  = inpData + d * inpPlane;
+        const float* inp  = inpData + d * channels * inpPlane;
         const float* grid = gridData + d * outPlane * 2;
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
@@ -127,13 +127,15 @@ InferenceEngine::StatusCode GridSampleImpl::execute(std::vector<InferenceEngine:
 
                 const float* inp_row0 = inp + y0 * inpWidth;
                 const float* inp_row1 = inp + y1 * inpWidth;
-                float* out = outData + d * outPlane + offset;
+                float* out = outData + d * channels * outPlane;
                 for (int c = 0; c < channels; ++c) {
-                    *out = inp_row0[x0] +
+                    out[offset] = inp_row0[x0] +
                            (input_y - y0) * (inp_row1[x0] - inp_row0[x0]) +
                            (input_x - x0) * (inp_row0[x1] - inp_row0[x0] +
                            (input_y - y0) * (inp_row1[x1] - inp_row0[x1] - inp_row1[x0] + inp_row0[x0]));
                     out += outPlane;
+                    inp_row0 += inpPlane;
+                    inp_row1 += inpPlane;
                 }
             }
         }

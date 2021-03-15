@@ -26,11 +26,6 @@ exec_net = ie.load_network(net, 'CPU')
 out = exec_net.infer(inputs)
 out = next(iter(out.values()))
 
-# print(inputs['input'])
-# print(inputs['input1'])
-# print(ref)
-# print(out)
-
 maxdiff = np.max(np.abs(ref - out))
 print('Reference range: [{}, {}]'.format(np.min(ref), np.max(ref)))
 print('Maximal difference:', maxdiff)
