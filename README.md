@@ -4,6 +4,7 @@ Repository with guides to enable some layers from PyTorch in Intel OpenVINO:
 
 * [nn.MaxUnpool2d](examples/unpool)
 * [torch.fft](examples/fft)
+* [nn.functional.grid_sample](https://github.com/dkurt/openvino_pytorch_layers/tree/master/examples/grid_sample)
 
 
 ## OpenVINO Model Optimizer extension
