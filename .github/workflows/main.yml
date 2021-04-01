@@ -81,3 +81,4 @@ jobs:
         python3 examples/grid_sample/export_model.py
         python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
         python3 compare.py --num_inputs 2
+        python3 compare.py --num_inputs 2 -d GPU
