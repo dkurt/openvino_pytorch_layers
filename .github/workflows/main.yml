@@ -59,7 +59,7 @@ jobs:
         python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
         python3 compare.py
 
-        python3 examples/unpool/export_model.py --mode=dynamic_size --shape 4 3 17 8
+        python3 examples/unpool/export_model.py --mode=dynamic_size --shape 4 3 255 401
         python3 compare.py
 
 
