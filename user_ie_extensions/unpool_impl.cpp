@@ -114,15 +114,24 @@ InferenceEngine::StatusCode UnpoolImpl::execute(std::vector<InferenceEngine::Blo
     const size_t poolOutHeight = poolOutDims[2];
     const size_t poolOutWidth  = poolOutDims[3];
     InferenceEngine::parallel_for(batch*channels, [&](size_t d) {
+        for (int y = outHeight - 1; y >= height; --y) {
+            float* outRow = out + (d * outHeight + y) * outWidth;
+            for (int x = outWidth - 1; x >= 0; --x) {
+                outRow[x] = 0;
+            }
+        }
         for (int y = height - 1; y >= 0; --y) {
+            float* outRow = out + (d * outHeight + y) * outWidth;
+            for (int x = outWidth - 1; x >= width; --x) {
+                outRow[x] = 0;
+            }
             for (int x = width - 1; x >= 0; --x) {
                 int poolOutIdx = (d * poolOutHeight + y / 2) * poolOutWidth + x / 2;
                 int poolInpIdx = (d * height + y) * width + x;
-                int dstIdx = d * outHeight * outWidth + (y * width + x);
                 if (fabs(poolInp[poolInpIdx] - poolOut[poolOutIdx]) < 1e-6f) {
-                    out[dstIdx] = inp[poolOutIdx];
+                    outRow[x] = inp[poolOutIdx];
                 } else {
-                    out[dstIdx] = 0;
+                    outRow[x] = 0;
                 }
             }
         }
