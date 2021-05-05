@@ -7,7 +7,9 @@
 #include <ie_layouts.h>
 #include "ie_parallel.hpp"
 
+#ifdef HAVE_OPENCV
 #include <opencv2/opencv.hpp>
+#endif
 
 using namespace TemplateExtension;
 
@@ -72,6 +74,7 @@ InferenceEngine::StatusCode FFTImpl::init(InferenceEngine::LayerConfig &config, 
 }
 //! [cpu_implementation:init]
 
+#ifdef HAVE_OPENCV
 static cv::Mat infEngineBlobToMat(const InferenceEngine::Blob::Ptr& blob)
 {
     // NOTE: Inference Engine sizes are reversed.
@@ -130,4 +133,14 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
 
     return InferenceEngine::OK;
 }
+
+#else
+
+InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::Ptr> &inputs,
+                                             std::vector<InferenceEngine::Blob::Ptr> &outputs,
+                                             InferenceEngine::ResponseDesc *resp) noexcept {
+    THROW_IE_EXCEPTION << "OpenCV is required for FFT implementation!";
+}
+
+#endif  // HAVE_OPENCV
 //! [cpu_implementation:execute]
