@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 from openvino.inference_engine import IECore
+from openvino_extensions import get_extensions_path
 
 parser = argparse.ArgumentParser(description='Compare OpenVINO implementation with reference data')
 parser.add_argument('--num_inputs', type=int, default=1)
@@ -17,7 +18,7 @@ for i in range(args.num_inputs):
 ref = np.load('ref.npy')
 
 ie = IECore()
-ie.add_extension('user_ie_extensions/build/libuser_cpu_extension.so', 'CPU')
+ie.add_extension(get_extensions_path(), 'CPU')
 
 net = ie.read_network('model.xml', 'model.bin')
 net.reshape(shapes)

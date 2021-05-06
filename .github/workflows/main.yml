@@ -16,78 +16,7 @@ env:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # build:
-  #   # The type of runner that the job will run on
-  #   runs-on: ubuntu-18.04
-
-  #   # Steps represent a sequence of tasks that will be executed as part of the job
-  #   steps:
-  #   # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-  #   - uses: actions/checkout@v2
-
-  #   - name: Install dependencies
-  #     run: |
-  #       sudo apt-get install -y python3-setuptools
-  #       python3 -m pip install --upgrade pip
-  #       python3 -m pip install -r requirements.txt
-
-  #   - name: Install Intel OpenVINO
-  #     run: |
-  #       sudo curl -o GPG-PUB-KEY-INTEL-OPENVINO-2021 https://apt.repos.intel.com/openvino/2021/GPG-PUB-KEY-INTEL-OPENVINO-2021
-  #       sudo apt-key add GPG-PUB-KEY-INTEL-OPENVINO-2021
-  #       sudo echo "deb https://apt.repos.intel.com/openvino/2021 all main" | sudo tee - a /etc/apt/sources.list.d/intel-openvino-2021.list
-  #       sudo apt-get update
-  #       sudo apt-get install -y --no-install-recommends intel-openvino-dev-ubuntu18-2021.1.110
-  #       sudo ln -s /opt/intel/openvino_2021 /opt/intel/openvino
-
-  #   - name: Build CPU extensions
-  #     run: |
-  #       source /opt/intel/openvino/bin/setupvars.sh
-  #       export TBB_DIR=/opt/intel/openvino/deployment_tools/inference_engine/external/tbb/cmake/
-  #       cd user_ie_extensions
-  #       mkdir build && cd build
-  #       cmake .. -DCMAKE_BUILD_TYPE=Release && make -j$(nproc --all)
-
-  #   - name: (Test Unpool) default parameters
-  #     run: |
-  #       source /opt/intel/openvino/bin/setupvars.sh
-  #       python3 examples/unpool/export_model.py --mode=default
-  #       python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
-  #       python3 compare.py
-
-  #   - name: (Test Unpool) Test dynamic shapes
-  #     run: |
-  #       source /opt/intel/openvino/bin/setupvars.sh
-  #       python3 examples/unpool/export_model.py --mode=dynamic_size --shape 5 3 6 9
-  #       python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
-  #       python3 compare.py
-
-  #       python3 examples/unpool/export_model.py --mode=dynamic_size --shape 4 3 17 8
-  #       python3 compare.py
-
-
-  #   - name: (Test FFT)
-  #     run: |
-  #       source /opt/intel/openvino/bin/setupvars.sh
-  #       for shape in "5 120 2" "4 240 320 2" "3 5 240 320 2"; do
-  #         python3 examples/fft/export_model.py --shape ${shape}
-  #         python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
-  #         python3 compare.py
-  #       done
-
-  #       python3 examples/fft/export_model.py --shape 3 7 140 100 2
-  #       python3 compare.py
-
-  #   - name: (Test GridSample)
-  #     run: |
-  #       source /opt/intel/openvino/bin/setupvars.sh
-  #       python3 examples/grid_sample/export_model.py
-  #       python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
-  #       python3 compare.py --num_inputs 2
-
-
   build_lnx:
-    # needs: build
     runs-on: ubuntu-18.04
     container:
       quay.io/pypa/manylinux2014_x86_64
@@ -123,7 +52,7 @@ jobs:
     - name: Build wheel
       run: |
         EXT_LIB=user_ie_extensions/build/libuser_cpu_extension.so /opt/python/cp36-cp36m/bin/python setup.py build bdist_wheel
-        mv dist/*.whl openvino_extensions-${{env.VERSION}}-py3-none-linux_x86_64.whl
+        mv dist/*.whl openvino_extensions-${{env.VERSION}}-py3-none-manylinux2014_x86_64.whl
 
     - uses: actions/upload-artifact@v2
       with:
@@ -131,9 +60,78 @@ jobs:
         path: "*.whl"
 
 
+  test_lnx:
+    needs: build_lnx
+    runs-on: ubuntu-18.04
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y python3-setuptools
+        python3 -m pip install --upgrade pip
+        python3 -m pip install -r requirements.txt
+
+    - name: Install Intel OpenVINO
+      run: |
+        sudo curl -o GPG-PUB-KEY-INTEL-OPENVINO-2021 https://apt.repos.intel.com/openvino/2021/GPG-PUB-KEY-INTEL-OPENVINO-2021
+        sudo apt-key add GPG-PUB-KEY-INTEL-OPENVINO-2021
+        sudo echo "deb https://apt.repos.intel.com/openvino/2021 all main" | sudo tee - a /etc/apt/sources.list.d/intel-openvino-2021.list
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends intel-openvino-dev-ubuntu18-2021.3.394
+        sudo ln -s /opt/intel/openvino_2021 /opt/intel/openvino
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: wheel_lnx
+
+    - name: Install CPU extensions
+      run: |
+        rm -r openvino_extensions
+        python3 -m pip install *.whl
+
+    - name: (Test Unpool) default parameters
+      run: |
+        source /opt/intel/openvino/bin/setupvars.sh
+        python3 examples/unpool/export_model.py --mode=default
+        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
+        python3 compare.py
+
+    - name: (Test Unpool) Test dynamic shapes
+      run: |
+        source /opt/intel/openvino/bin/setupvars.sh
+        python3 examples/unpool/export_model.py --mode=dynamic_size --shape 5 3 6 9
+        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
+        python3 compare.py
+
+        python3 examples/unpool/export_model.py --mode=dynamic_size --shape 4 3 17 8
+        python3 compare.py
+
+
+    - name: (Test FFT)
+      run: |
+        source /opt/intel/openvino/bin/setupvars.sh
+        for shape in "5 120 2" "4 240 320 2" "3 5 240 320 2"; do
+          python3 examples/fft/export_model.py --shape ${shape}
+          python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
+          python3 compare.py
+        done
+
+        python3 examples/fft/export_model.py --shape 3 7 140 100 2
+        python3 compare.py
+
+    - name: (Test GridSample)
+      run: |
+        source /opt/intel/openvino/bin/setupvars.sh
+        python3 examples/grid_sample/export_model.py
+        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
+        python3 compare.py --num_inputs 2
+
+
   publish:
     # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    needs: [build_lnx]
+    needs: [test_lnx]
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/download-artifact@v2
