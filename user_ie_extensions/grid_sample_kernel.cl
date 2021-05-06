@@ -1,3 +1,4 @@
+#pragma OPENCL EXTENSION cl_khr_fp16 : enable
 
 INPUT0_TYPE sample_input(__global INPUT0_TYPE* input, uint x, uint y, uint w, uint h)
 {
