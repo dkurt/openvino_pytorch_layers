@@ -10,4 +10,3 @@ def get_extensions_path():
     else:
         lib_name = 'lib' + lib_name + '.dylib'
     return os.path.join(os.path.dirname(__file__), lib_name)
-        

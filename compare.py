@@ -1,7 +1,7 @@
 import argparse
 import numpy as np
-from openvino.inference_engine import IECore
 from openvino_extensions import get_extensions_path
+from openvino.inference_engine import IECore
 
 parser = argparse.ArgumentParser(description='Compare OpenVINO implementation with reference data')
 parser.add_argument('--num_inputs', type=int, default=1)
@@ -18,13 +18,20 @@ for i in range(args.num_inputs):
 ref = np.load('ref.npy')
 
 ie = IECore()
+print('Export start')
 ie.add_extension(get_extensions_path(), 'CPU')
+print('Export done')
 
+print('Read')
 net = ie.read_network('model.xml', 'model.bin')
+print('reshape')
 net.reshape(shapes)
+print('load')
 exec_net = ie.load_network(net, 'CPU')
 
+print('infer')
 out = exec_net.infer(inputs)
+print('infer done')
 out = next(iter(out.values()))
 
 maxdiff = np.max(np.abs(ref - out))
