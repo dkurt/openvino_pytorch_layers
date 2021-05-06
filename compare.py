@@ -4,6 +4,7 @@ from openvino.inference_engine import IECore
 
 parser = argparse.ArgumentParser(description='Compare OpenVINO implementation with reference data')
 parser.add_argument('--num_inputs', type=int, default=1)
+parser.add_argument('-d', '--device', default="CPU")
 args = parser.parse_args()
 
 inputs = {}
@@ -18,10 +19,11 @@ ref = np.load('ref.npy')
 
 ie = IECore()
 ie.add_extension('user_ie_extensions/build/libuser_cpu_extension.so', 'CPU')
+ie.set_config({'CONFIG_FILE': 'user_ie_extensions/gpu_extensions.xml'}, 'GPU')
 
 net = ie.read_network('model.xml', 'model.bin')
 net.reshape(shapes)
-exec_net = ie.load_network(net, 'CPU')
+exec_net = ie.load_network(net, args.device)
 
 out = exec_net.infer(inputs)
 out = next(iter(out.values()))
