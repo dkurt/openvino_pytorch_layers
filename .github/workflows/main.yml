@@ -12,7 +12,7 @@ on:
 
 env:
   OPENVINO_VERSION: 2021.3
-  VERSION: 0.0.1
+  VERSION: 0.0.2
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -123,7 +123,7 @@ jobs:
     - name: Build wheel
       run: |
         EXT_LIB=user_ie_extensions/build/libuser_cpu_extension.so /opt/python/cp36-cp36m/bin/python setup.py build bdist_wheel
-        mv dist/*.whl openvino_extensions-${{env.VERSION}}-py3-manylinux2014_x86_64.whl
+        mv dist/*.whl openvino_extensions-${{env.VERSION}}-py3-none-linux_x86_64.whl
 
     - uses: actions/upload-artifact@v2
       with:

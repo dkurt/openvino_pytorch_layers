@@ -24,6 +24,7 @@ private:
     std::vector<ngraph::Shape> inShapes;
     ngraph::Shape outShape;
     std::string error;
+    std::vector<bool> mask;
 };
 
 class FFTImpl : public InferenceEngine::ILayerExecImpl {
