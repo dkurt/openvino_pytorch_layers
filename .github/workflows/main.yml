@@ -74,7 +74,15 @@ jobs:
         sudo apt-get install -y python3-setuptools
         python3 -m pip install --upgrade pip
         python3 -m pip install -r requirements.txt
-        python3 -m pip install openvino-dev==${{env.OPENVINO_VERSION}}
+
+    - name: Install Intel OpenVINO
+      run: |
+        sudo curl -o GPG-PUB-KEY-INTEL-OPENVINO-2021 https://apt.repos.intel.com/openvino/2021/GPG-PUB-KEY-INTEL-OPENVINO-2021
+        sudo apt-key add GPG-PUB-KEY-INTEL-OPENVINO-2021
+        sudo echo "deb https://apt.repos.intel.com/openvino/2021 all main" | sudo tee - a /etc/apt/sources.list.d/intel-openvino-2021.list
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends intel-openvino-dev-ubuntu18-2021.1.110
+        sudo ln -s /opt/intel/openvino_2021 /opt/intel/openvino
 
     - uses: actions/download-artifact@v2
       with:
@@ -88,8 +96,9 @@ jobs:
 
     - name: (Test Unpool) default parameters
       run: |
+        source /opt/intel/openvino/bin/setupvars.sh
         python3 examples/unpool/export_model.py --mode=default
-        python3 -c "import sys, subprocess, mo_onnx; subprocess.run([sys.executable, mo_onnx.__file__, '--input_model=model.onnx', '--extension=mo_extensions'], check=True)"
+        python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py --input_model model.onnx --extension mo_extensions
         python3 compare.py
 
     - name: (Test Unpool) Test dynamic shapes
