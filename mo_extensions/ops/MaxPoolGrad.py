@@ -20,5 +20,6 @@ class MaxPoolGrad(Op):
             'op': __class__.op,
             'in_ports_count': 4,
             'out_ports_count': 1,
-            'infer': shape_infer
+            'infer': shape_infer,
+            'version': 'custom_opset',
         }, attrs)

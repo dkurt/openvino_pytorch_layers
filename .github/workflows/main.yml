@@ -23,7 +23,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-  
+
     - name: Install OpenVINO (libs and headers)
       run: |
         /opt/python/cp36-cp36m/bin/python -m pip install --upgrade pip

@@ -31,10 +31,10 @@ void Extension::GetVersion(const InferenceEngine::Version *&versionInfo) const n
 std::map<std::string, ngraph::OpSet> Extension::getOpSets() {
     std::map<std::string, ngraph::OpSet> opsets;
     ngraph::OpSet opset;
-    opset.insert<UnpoolOp>();
-    opset.insert<FFTOp>();
-    opset.insert<GridSampleOp>();
-    opsets["extension"] = opset;
+    opset.insert<UnpoolOp>("MaxPoolGrad");
+    // opset.insert<FFTOp>();
+    // opset.insert<GridSampleOp>();
+    opsets["custom_opset"] = opset;
     return opsets;
 }
 //! [extension:getOpSets]
