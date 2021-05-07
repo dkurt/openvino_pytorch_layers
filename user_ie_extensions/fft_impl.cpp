@@ -5,9 +5,9 @@
 #include "op.hpp"
 #include <details/ie_exception.hpp>
 #include <ie_layouts.h>
-#include "ie_parallel.hpp"
 
 #ifdef HAVE_OPENCV
+#include "ie_parallel.hpp"
 #include <opencv2/opencv.hpp>
 #endif
 

@@ -1,7 +1,9 @@
-import argparse
-import numpy as np
+# NOTE: import order is critical for now: extensions, openvino and only then numpy
 from openvino_extensions import get_extensions_path
 from openvino.inference_engine import IECore
+
+import argparse
+import numpy as np
 
 parser = argparse.ArgumentParser(description='Compare OpenVINO implementation with reference data')
 parser.add_argument('--num_inputs', type=int, default=1)

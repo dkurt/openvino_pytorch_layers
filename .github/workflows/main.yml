@@ -44,17 +44,15 @@ jobs:
         mkdir build && cd build
         cmake .. \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_CXX_FLAGS="-I../../openvino/inference-engine/include/ -I../../openvino/ngraph/core/include -I../../openvino/inference-engine/temp/tbb/include" \
+          -DCMAKE_CXX_FLAGS="-I../../openvino/inference-engine/include/ -I../../openvino/ngraph/core/include" \
           -DCMAKE_SHARED_LINKER_FLAGS="-L/opt/python/cp36-cp36m/lib/python3.6/site-packages/openvino/libs" \
           -DNGRAPH_LIBRARIES=ngraph \
-          -DInferenceEngine_LIBRARIES=inference_engine \
-          -DTBB_IMPORTED_TARGETS=tbb
+          -DInferenceEngine_LIBRARIES=inference_engine
         make -j$(nproc --all)
 
     - name: Build wheel
       run: |
         EXT_LIB=user_ie_extensions/build/libuser_cpu_extension.so /opt/python/cp36-cp36m/bin/python setup.py build bdist_wheel
-        export LD_LIBRARY_PATH=/opt/python/cp36-cp36m/lib/python3.6/site-packages/openvino/libs:$LD_LIBRARY_PATH
         mv dist/*.whl openvino_extensions-${{env.VERSION}}-py3-none-manylinux2014_x86_64.whl
 
     - uses: actions/upload-artifact@v2
