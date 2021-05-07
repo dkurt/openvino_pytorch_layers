@@ -19,33 +19,39 @@ jobs:
   build_lnx:
     runs-on: ubuntu-18.04
     container:
-      quay.io/pypa/manylinux2014_x86_64
+      centos:centos7.4.1708
 
     steps:
     - uses: actions/checkout@v2
 
     - name: Install OpenVINO (libs and headers)
       run: |
-        /opt/python/cp36-cp36m/bin/python -m pip install --upgrade pip
-        /opt/python/cp36-cp36m/bin/python -m pip install openvino==${{env.OPENVINO_VERSION}}
+        yum install -y python3 git wget
+        python3 -m pip install --upgrade pip
+        python3 -m pip install openvino==${{env.OPENVINO_VERSION}}
         git clone -b ${{env.OPENVINO_VERSION}} https://github.com/openvinotoolkit/openvino --depth 1
 
     - name: Download TBB
       run: |
+        yum group install -y "Development Tools"
+
+        wget -q https://github.com/Kitware/CMake/releases/download/v3.20.2/cmake-3.20.2-linux-x86_64.tar.gz
+        tar -xf cmake-3.20.2-linux-x86_64.tar.gz
+
         cd openvino
         git submodule init
         git submodule update --recursive
         mkdir build && cd build
-        cmake .. -DENABLE_VPU=OFF -DENABLE_CLDNN=OFF -DENABLE_MKL_DNN=OFF -DENABLE_GNA=OFF
+        ../../cmake-3.20.2-linux-x86_64/bin/cmake .. -DENABLE_VPU=OFF -DENABLE_CLDNN=OFF -DENABLE_MKL_DNN=OFF -DENABLE_GNA=OFF
 
     - name: Build CPU extensions
       run: |
         cd user_ie_extensions
         mkdir build && cd build
-        cmake .. \
+        ../../cmake-3.20.2-linux-x86_64/bin/cmake .. \
           -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_CXX_FLAGS="-I../../openvino/inference-engine/include/ -I../../openvino/ngraph/core/include -I../../openvino/inference-engine/temp/tbb/include" \
-          -DCMAKE_SHARED_LINKER_FLAGS="-L/opt/python/cp36-cp36m/lib/python3.6/site-packages/openvino/libs" \
+          -DCMAKE_CXX_FLAGS="-std=c++11 -I../../openvino/inference-engine/include/ -I../../openvino/ngraph/core/include -I../../openvino/inference-engine/temp/tbb/include" \
+          -DCMAKE_SHARED_LINKER_FLAGS="-L/usr/local/lib64/python3.6/site-packages/openvino/libs" \
           -DNGRAPH_LIBRARIES=ngraph \
           -DInferenceEngine_LIBRARIES=inference_engine \
           -DTBB_IMPORTED_TARGETS=tbb
@@ -53,7 +59,8 @@ jobs:
 
     - name: Build wheel
       run: |
-        EXT_LIB=user_ie_extensions/build/libuser_cpu_extension.so /opt/python/cp36-cp36m/bin/python setup.py build bdist_wheel
+        python3 -m pip install wheel
+        EXT_LIB=user_ie_extensions/build/libuser_cpu_extension.so python3 setup.py build bdist_wheel
         mv dist/*.whl openvino_extensions-${{env.VERSION}}-py3-none-manylinux2014_x86_64.whl
 
     - uses: actions/upload-artifact@v2
