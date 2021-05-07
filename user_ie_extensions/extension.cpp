@@ -41,9 +41,10 @@ std::map<std::string, ngraph::OpSet> Extension::getOpSets() {
 
 //! [extension:getImplTypes]
 std::vector<std::string> Extension::getImplTypes(const std::shared_ptr<ngraph::Node> &node) {
-    if (std::dynamic_pointer_cast<UnpoolOp>(node) ||
-        std::dynamic_pointer_cast<GridSampleOp>(node) ||
-        std::dynamic_pointer_cast<FFTOp>(node)) {
+    std::cout << ">>>>>>>>>>>>>>>>>>>>>> " << node->get_type_info().name << std::endl;
+    if (node->get_type_info().name == UnpoolOp::type_info.name ||
+        node->get_type_info().name == GridSampleOp::type_info.name ||
+        node->get_type_info().name == FFTOp::type_info.name) {
         return {"CPU"};
     }
     return {};
@@ -52,13 +53,14 @@ std::vector<std::string> Extension::getImplTypes(const std::shared_ptr<ngraph::N
 
 //! [extension:getImplementation]
 InferenceEngine::ILayerImpl::Ptr Extension::getImplementation(const std::shared_ptr<ngraph::Node> &node, const std::string &implType) {
-    if (std::dynamic_pointer_cast<UnpoolOp>(node) && implType == "CPU") {
+    std::cout << ">>>>>>>>>>>>>>>>>>>>>> " << node->get_type_info().name << std::endl;
+    if (node->get_type_info().name == UnpoolOp::type_info.name && implType == "CPU") {
         return std::make_shared<UnpoolImpl>(node);
     }
-    if (std::dynamic_pointer_cast<FFTOp>(node) && implType == "CPU") {
+    if (node->get_type_info().name == FFTOp::type_info.name && implType == "CPU") {
         return std::make_shared<FFTImpl>(node);
     }
-    if (std::dynamic_pointer_cast<GridSampleOp>(node) && implType == "CPU") {
+    if (node->get_type_info().name == GridSampleOp::type_info.name && implType == "CPU") {
         return std::make_shared<GridSampleImpl>(node);
     }
     return nullptr;

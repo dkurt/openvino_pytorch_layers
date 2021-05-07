@@ -11,7 +11,7 @@ using namespace TemplateExtension;
 
 //! [cpu_implementation:ctor]
 UnpoolImpl::UnpoolImpl(const std::shared_ptr<ngraph::Node> &node) {
-    try {
+    // try {
         auto castedNode = std::dynamic_pointer_cast<UnpoolOp>(node);
         if (!castedNode)
             THROW_IE_EXCEPTION << "Cannot create implementation for unknown operation!";
@@ -29,9 +29,9 @@ UnpoolImpl::UnpoolImpl(const std::shared_ptr<ngraph::Node> &node) {
         outShape = castedNode->get_output_shape(0);
 
         mask.resize(inShapes[1][0]*inShapes[1][1]*inShapes[1][2]*inShapes[1][3]);
-    } catch (InferenceEngine::details::InferenceEngineException& ex) {
-        error = ex.what();
-    }
+    // } catch (InferenceEngine::details::InferenceEngineException& ex) {
+    //     error = ex.what();
+    // }
 }
 //! [cpu_implementation:ctor]
 
