@@ -20,20 +20,13 @@ for i in range(args.num_inputs):
 ref = np.load('ref.npy')
 
 ie = IECore()
-print('Export start')
 ie.add_extension(get_extensions_path(), 'CPU')
-print('Export done')
 
-print('Read')
 net = ie.read_network('model.xml', 'model.bin')
-print('reshape')
 net.reshape(shapes)
-print('load')
 exec_net = ie.load_network(net, 'CPU')
 
-print('infer')
 out = exec_net.infer(inputs)
-print('infer done')
 out = next(iter(out.values()))
 
 maxdiff = np.max(np.abs(ref - out))

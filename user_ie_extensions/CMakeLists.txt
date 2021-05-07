@@ -13,9 +13,9 @@ if (NOT InferenceEngine_LIBRARIES)
   find_package(InferenceEngine REQUIRED)
 endif()
 
-# if (NOT TBB_IMPORTED_TARGETS)
-#   find_package(TBB REQUIRED tbb tbbmalloc)
-# endif()
+if (NOT TBB_IMPORTED_TARGETS)
+  find_package(TBB REQUIRED tbb tbbmalloc)
+endif()
 
 find_package(OpenCV)
 
@@ -31,6 +31,5 @@ target_compile_definitions(${TARGET_NAME} PRIVATE IMPLEMENT_INFERENCE_EXTENSION_
 target_link_libraries(${TARGET_NAME} PRIVATE ${InferenceEngine_LIBRARIES}
                                              ${NGRAPH_LIBRARIES}
                                              ${OpenCV_LIBRARIES}
-                                            #  ${TBB_IMPORTED_TARGETS}
-                                             )
+                                             ${TBB_IMPORTED_TARGETS})
 # [cmake:extension]

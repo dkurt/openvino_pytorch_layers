@@ -5,7 +5,7 @@
 #include "op.hpp"
 #include <details/ie_exception.hpp>
 #include <ie_layouts.h>
-// #include "ie_parallel.hpp"
+#include "ie_parallel.hpp"
 
 using namespace TemplateExtension;
 
@@ -117,8 +117,7 @@ InferenceEngine::StatusCode UnpoolImpl::execute(std::vector<InferenceEngine::Blo
     const size_t poolOutWidth  = poolOutDims[3];
     std::fill(mask.begin(), mask.end(), false);
     memset(out, 0, outputs[0]->byteSize());
-    // InferenceEngine::parallel_for(batch*channels, [&](size_t d) {
-    for (size_t d = 0; d < batch * channels; ++d) {
+    InferenceEngine::parallel_for(batch*channels, [&](size_t d) {
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
                 int poolOutIdx = (d * poolOutHeight + y / 2) * poolOutWidth + x / 2;
@@ -130,7 +129,7 @@ InferenceEngine::StatusCode UnpoolImpl::execute(std::vector<InferenceEngine::Blo
                 }
             }
         }
-    };
+    });
     return InferenceEngine::OK;
 }
 //! [cpu_implementation:execute]
