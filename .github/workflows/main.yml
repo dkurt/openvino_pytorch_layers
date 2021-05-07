@@ -109,22 +109,22 @@ jobs:
         python3 compare.py
 
 
-    - name: (Test FFT)
-      run: |
-        for shape in "5 120 2" "4 240 320 2" "3 5 240 320 2"; do
-          python3 examples/fft/export_model.py --shape ${shape}
-          python3 -c "import sys, subprocess, mo_onnx; subprocess.run([sys.executable, mo_onnx.__file__, '--input_model=model.onnx', '--extension=mo_extensions'], check=True)"
-          python3 compare.py
-        done
+    # - name: (Test FFT)
+    #   run: |
+    #     for shape in "5 120 2" "4 240 320 2" "3 5 240 320 2"; do
+    #       python3 examples/fft/export_model.py --shape ${shape}
+    #       python3 -c "import sys, subprocess, mo_onnx; subprocess.run([sys.executable, mo_onnx.__file__, '--input_model=model.onnx', '--extension=mo_extensions'], check=True)"
+    #       python3 compare.py
+    #     done
+    #
+    #     python3 examples/fft/export_model.py --shape 3 7 140 100 2
+    #     python3 compare.py
 
-        python3 examples/fft/export_model.py --shape 3 7 140 100 2
-        python3 compare.py
-
-    - name: (Test GridSample)
-      run: |
-        python3 examples/grid_sample/export_model.py
-        python3 -c "import sys, subprocess, mo_onnx; subprocess.run([sys.executable, mo_onnx.__file__, '--input_model=model.onnx', '--extension=mo_extensions'], check=True)"
-        python3 compare.py --num_inputs 2
+    # - name: (Test GridSample)
+    #   run: |
+    #     python3 examples/grid_sample/export_model.py
+    #     python3 -c "import sys, subprocess, mo_onnx; subprocess.run([sys.executable, mo_onnx.__file__, '--input_model=model.onnx', '--extension=mo_extensions'], check=True)"
+    #     python3 compare.py --num_inputs 2
 
 
   publish:
