@@ -12,14 +12,14 @@ on:
 
 env:
   OPENVINO_VERSION: 2021.3
-  VERSION: 0.0.2
+  VERSION: 0.0.11
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   build_lnx:
     runs-on: ubuntu-18.04
     container:
-      centos:centos7.4.1708
+      centos:centos7.6.1810
 
     steps:
     - uses: actions/checkout@v2
@@ -68,10 +68,81 @@ jobs:
         name: "wheel_lnx"
         path: "*.whl"
 
+  # OpenVINO 2021.3 package for Python 3.8 is invalid - it's Ubuntu but not CentOS
+  # Due to this dirty hack, we have to make a dirty build with a separate wheel for Python 3.8
+  build_lnx_cp38:
+    runs-on: ubuntu-18.04
+    container:
+      quay.io/pypa/manylinux2014_x86_64
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install OpenVINO (libs and headers)
+      run: |
+        yum install -y git wget
+        /opt/python/cp38-cp38/bin/python -m pip install --upgrade pip
+        /opt/python/cp38-cp38/bin/python -m pip install openvino==${{env.OPENVINO_VERSION}}
+        /opt/python/cp38-cp38/bin/python -c "import openvino; print(openvino.__file__)"
+        git clone -b ${{env.OPENVINO_VERSION}} https://github.com/openvinotoolkit/openvino --depth 1
+
+    - name: Download TBB
+      run: |
+        cd openvino
+        git submodule init
+        git submodule update --recursive
+        mkdir build && cd build
+        cmake .. -DENABLE_VPU=OFF -DENABLE_CLDNN=OFF -DENABLE_MKL_DNN=OFF -DENABLE_GNA=OFF
+
+    - name: Build CPU extensions
+      run: |
+        cd user_ie_extensions
+        mkdir build && cd build
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_CXX_FLAGS="-std=c++11 -I../../openvino/inference-engine/include/ -I../../openvino/ngraph/core/include -I../../openvino/inference-engine/temp/tbb/include" \
+          -DCMAKE_SHARED_LINKER_FLAGS="-L/opt/python/cp38-cp38/lib/python3.8/site-packages/openvino/libs" \
+          -DNGRAPH_LIBRARIES=ngraph \
+          -DInferenceEngine_LIBRARIES=inference_engine \
+          -DTBB_IMPORTED_TARGETS=tbb
+        make -j$(nproc --all)
+
+    - name: Build wheel
+      run: |
+        /opt/python/cp38-cp38/bin/python -m pip install wheel
+        EXT_LIB=user_ie_extensions/build/libuser_cpu_extension.so /opt/python/cp38-cp38/bin/python setup.py build bdist_wheel
+        mv dist/*.whl openvino_extensions-${{env.VERSION}}-cp38-cp38-manylinux2014_x86_64.whl
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: "wheel_lnx_cp38"
+        path: "*.whl"
+
+
+  publish_test:
+    # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: [build_lnx, build_lnx_cp38]
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/download-artifact@v2
+
+      - name: Publish
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install twine
+          python3 -m twine upload --repository testpypi wheel*/*.whl
+
 
   test_lnx:
-    needs: build_lnx
-    runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        lnx_os: [ubuntu-18.04, ubuntu-20.04]
+
+    needs: publish_test
+    runs-on: ${{ matrix.lnx_os }}
 
     steps:
     - uses: actions/checkout@v2
@@ -81,17 +152,14 @@ jobs:
         sudo apt-get install -y python3-setuptools
         python3 -m pip install --upgrade pip
         python3 -m pip install -r requirements.txt
+        python3 -m pip install -U protobuf
         python3 -m pip install openvino-dev==${{env.OPENVINO_VERSION}}
-
-    - uses: actions/download-artifact@v2
-      with:
-        name: wheel_lnx
 
     # Also, remove "openvino_extensions" folder to avoid import confusion
     - name: Install CPU extensions
       run: |
         rm -r openvino_extensions
-        python3 -m pip install *.whl
+        python3 -m pip install --index-url https://test.pypi.org/simple/ openvino-extensions==${{env.VERSION}}
 
     - name: (Test Unpool) default parameters
       run: |
