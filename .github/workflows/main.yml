@@ -24,37 +24,39 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Install OpenVINO (libs and headers)
+    - name: Install dependencies
       run: |
         yum install -y python3 git wget
-        python3 -m pip install --upgrade pip
-        python3 -m pip install openvino==${{env.OPENVINO_VERSION}}
-        git clone -b ${{env.OPENVINO_VERSION}} https://github.com/openvinotoolkit/openvino --depth 1
-
-    - name: Download TBB
-      run: |
         yum group install -y "Development Tools"
-
+        python3 -m pip install --upgrade pip
         wget -q https://github.com/Kitware/CMake/releases/download/v3.20.2/cmake-3.20.2-linux-x86_64.tar.gz
         tar -xf cmake-3.20.2-linux-x86_64.tar.gz
+        git clone -b ${{env.OPENVINO_VERSION}} https://github.com/openvinotoolkit/openvino --depth 1
 
+    - name: Build OpenVINO (minimal)
+      run: |
         cd openvino
         git submodule init
         git submodule update --recursive
         mkdir build && cd build
-        ../../cmake-3.20.2-linux-x86_64/bin/cmake .. -DENABLE_VPU=OFF -DENABLE_CLDNN=OFF -DENABLE_MKL_DNN=OFF -DENABLE_GNA=OFF
+        ../../cmake-3.20.2-linux-x86_64/bin/cmake .. \
+          -DENABLE_VPU=OFF \
+          -DENABLE_CLDNN=OFF \
+          -DENABLE_CLDNN=OFF \
+          -DENABLE_MKL_DNN=OFF \
+          -DENABLE_GNA=OFF \
+          -DENABLE_TESTS=OFF \
+          -DENABLE_SAMPLES=OFF
+        make -j$(nproc --all)
 
     - name: Build CPU extensions
       run: |
         cd user_ie_extensions
         mkdir build && cd build
-        ../../cmake-3.20.2-linux-x86_64/bin/cmake .. \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_CXX_FLAGS="-I../../openvino/inference-engine/include/ -I../../openvino/ngraph/core/include -I../../openvino/inference-engine/temp/tbb/include" \
-          -DCMAKE_SHARED_LINKER_FLAGS="-L/usr/local/lib64/python3.6/site-packages/openvino/libs" \
-          -DNGRAPH_LIBRARIES=ngraph \
-          -DInferenceEngine_LIBRARIES=inference_engine \
-          -DTBB_IMPORTED_TARGETS=tbb
+        export TBB_DIR=../../openvino/inference-engine/temp/tbb/cmake
+        export InferenceEngine_DIR=../../openvino/build
+        export ngraph_DIR=../../openvino/build/ngraph
+        ../../cmake-3.20.2-linux-x86_64/bin/cmake .. -DCMAKE_BUILD_TYPE=Release
         make -j$(nproc --all)
 
     - name: Build wheel
