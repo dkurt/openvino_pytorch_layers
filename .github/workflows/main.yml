@@ -12,7 +12,7 @@ on:
 
 env:
   OPENVINO_VERSION: 2021.3
-  VERSION: 0.0.11
+  VERSION: 0.0.15
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -26,37 +26,25 @@ jobs:
 
     - name: Install dependencies
       run: |
-        yum install -y python3 git wget
+        yum install -y python3 wget
         yum group install -y "Development Tools"
         python3 -m pip install --upgrade pip
         wget -q https://github.com/Kitware/CMake/releases/download/v3.20.2/cmake-3.20.2-linux-x86_64.tar.gz
         tar -xf cmake-3.20.2-linux-x86_64.tar.gz
-        git clone -b ${{env.OPENVINO_VERSION}} https://github.com/openvinotoolkit/openvino --depth 1
 
-    - name: Build OpenVINO (minimal)
+    - name: Install OpenVINO
       run: |
-        cd openvino
-        git submodule init
-        git submodule update --recursive
-        mkdir build && cd build
-        ../../cmake-3.20.2-linux-x86_64/bin/cmake .. \
-          -DENABLE_VPU=OFF \
-          -DENABLE_CLDNN=OFF \
-          -DENABLE_CLDNN=OFF \
-          -DENABLE_MKL_DNN=OFF \
-          -DENABLE_GNA=OFF \
-          -DENABLE_TESTS=OFF \
-          -DENABLE_SAMPLES=OFF
-        make -j$(nproc --all)
+        yum install -y yum-utils
+        yum-config-manager --add-repo https://yum.repos.intel.com/openvino/2021/setup/intel-openvino-2021.repo
+        rpm --import https://yum.repos.intel.com/openvino/2021/setup/RPM-GPG-KEY-INTEL-OPENVINO-2021
+        yum install -y intel-openvino-runtime-centos7-2021.3.394.x86_64
 
     - name: Build CPU extensions
       run: |
+        source /opt/intel/openvino_2021/bin/setupvars.sh
         cd user_ie_extensions
         mkdir build && cd build
-        export TBB_DIR=../../openvino/inference-engine/temp/tbb/cmake
-        export InferenceEngine_DIR=../../openvino/build
-        export ngraph_DIR=../../openvino/build/ngraph
-        ../../cmake-3.20.2-linux-x86_64/bin/cmake .. -DCMAKE_BUILD_TYPE=Release
+        ../../cmake-3.20.2-linux-x86_64/bin/cmake .. -DCMAKE_BUILD_TYPE=Debug
         make -j$(nproc --all)
 
     - name: Build wheel

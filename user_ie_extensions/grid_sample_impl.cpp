@@ -5,7 +5,7 @@
 #include "op.hpp"
 #include <details/ie_exception.hpp>
 #include <ie_layouts.h>
-#include "ie_parallel.hpp"
+// #include "ie_parallel.hpp"
 
 using namespace TemplateExtension;
 
@@ -114,7 +114,8 @@ InferenceEngine::StatusCode GridSampleImpl::execute(std::vector<InferenceEngine:
 
     float* zeros = zerosPlane.data();
 
-    InferenceEngine::parallel_for(batch, [&](int d) {
+    // InferenceEngine::parallel_for(batch, [&](int d) {
+    for (size_t d = 0; d < batch; ++d) {
         const float* inp  = inpData + d * channels * inpPlane;
         const float* grid = gridData + d * outPlane * 2;
         for (int y = 0; y < height; ++y) {
@@ -170,7 +171,7 @@ InferenceEngine::StatusCode GridSampleImpl::execute(std::vector<InferenceEngine:
                 }
             }
         }
-    });
+    }
     return InferenceEngine::OK;
 }
 //! [cpu_implementation:execute]
