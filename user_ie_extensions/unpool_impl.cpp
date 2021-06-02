@@ -117,7 +117,6 @@ InferenceEngine::StatusCode UnpoolImpl::execute(std::vector<InferenceEngine::Blo
     const size_t poolOutWidth  = poolOutDims[3];
     std::fill(mask.begin(), mask.end(), false);
     memset(out, 0, outputs[0]->byteSize());
-    for (size_t d = 0; d < batch*channels; ++d) {
     InferenceEngine::parallel_for(batch*channels, [&](size_t d) {
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {

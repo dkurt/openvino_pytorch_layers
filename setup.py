@@ -14,4 +14,8 @@ setup(name='openvino-extensions',
       url='https://github.com/dkurt/openvino_pytorch_layers',
       packages=['openvino_extensions'],
       data_files=[('../../openvino_extensions', [os.environ['EXT_LIB']])],
+      classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: Apache Software License",
+      ],
 )

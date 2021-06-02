@@ -58,6 +58,73 @@ jobs:
         name: "wheel_lnx"
         path: "*.whl"
 
+  build_win:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install OpenVINO
+      run: |
+        curl https://registrationcenter-download.intel.com/akdlm/irc_nas/17505/w_openvino_toolkit_p_2021.2.185.exe -o openvino.exe
+        start /WAIT openvino.exe --s --a install --eula=accept --output=log.txt
+      shell: cmd
+
+    - name: Build CPU extensions
+      run: |
+        call "C:\Program Files (x86)\Intel\openvino_2021\bin\setupvars.bat"
+        cd user_ie_extensions
+        mkdir build && cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+        cmake --build . --config Release -j 2
+      shell: cmd
+
+    - name: Build wheel
+      run: |
+        python3 -m pip install wheel
+        ls user_ie_extensions\build\Release
+        set EXT_LIB=user_ie_extensions\\build\\Release\\user_cpu_extension.dll
+        python3 setup.py build bdist_wheel
+        move dist\\*.whl openvino_extensions-${{env.VERSION}}-py3-none-win_amd64.whl
+      shell: cmd
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: "wheel_win"
+        path: "*.whl"
+
+  # build_mac:
+  #   runs-on: macos-latest
+
+  #   steps:
+  #   - uses: actions/checkout@v2
+
+  #   - name: Install OpenVINO
+  #     run: |
+  #       wget -q https://registrationcenter-download.intel.com/akdlm/irc_nas/17660/m_openvino_toolkit_p_2021.3.394.dmg
+  #       tar -xf l_openvino_toolkit_p_2021.2.185.tgz
+  #       cd l_openvino_toolkit_p_2021.2.185
+  #       sudo ./install.sh --silent --accept_eula --install_dir /opt/intel
+
+  #   - name: Build CPU extensions
+  #     run: |
+  #       source /opt/intel/openvino_2021/bin/setupvars.sh
+  #       cd user_ie_extensions
+  #       mkdir build && cd build
+  #       ../../cmake-3.20.2-linux-x86_64/bin/cmake .. -DCMAKE_BUILD_TYPE=Release
+  #       make -j$(nproc --all)
+
+  #   - name: Build wheel
+  #     run: |
+  #       python3 -m pip install wheel
+  #       EXT_LIB=user_ie_extensions/build/libuser_cpu_extension.so python3 setup.py build bdist_wheel
+  #       mv dist/*.whl openvino_extensions-${{env.VERSION}}-py3-none-manylinux2014_x86_64.whl
+
+  #   - uses: actions/upload-artifact@v2
+  #     with:
+  #       name: "wheel_lnx"
+  #       path: "*.whl"
+
   test_lnx:
     strategy:
       matrix:
@@ -75,7 +142,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt-get install -y python3-setuptools
+        sudo apt-get install -y python3-setuptools libopencv-dev
         python3 -m pip install --upgrade pip
         python3 -m pip install -r requirements.txt
         python3 -m pip install -U protobuf
@@ -103,22 +170,22 @@ jobs:
         python3 compare.py
 
 
-    # - name: (Test FFT)
-    #   run: |
-    #     for shape in "5 120 2" "4 240 320 2" "3 5 240 320 2"; do
-    #       python3 examples/fft/export_model.py --shape ${shape}
-    #       python3 -c "import sys, subprocess, mo_onnx; subprocess.run([sys.executable, mo_onnx.__file__, '--input_model=model.onnx', '--extension=mo_extensions'], check=True)"
-    #       python3 compare.py
-    #     done
-    #
-    #     python3 examples/fft/export_model.py --shape 3 7 140 100 2
-    #     python3 compare.py
+    - name: (Test FFT)
+      run: |
+        for shape in "5 120 2" "4 240 320 2" "3 5 240 320 2"; do
+          python3 examples/fft/export_model.py --shape ${shape}
+          python3 -c "import sys, subprocess, mo_onnx; subprocess.run([sys.executable, mo_onnx.__file__, '--input_model=model.onnx', '--extension=mo_extensions'], check=True)"
+          python3 compare.py
+        done
+    
+        python3 examples/fft/export_model.py --shape 3 7 140 100 2
+        python3 compare.py
 
-    # - name: (Test GridSample)
-    #   run: |
-    #     python3 examples/grid_sample/export_model.py
-    #     python3 -c "import sys, subprocess, mo_onnx; subprocess.run([sys.executable, mo_onnx.__file__, '--input_model=model.onnx', '--extension=mo_extensions'], check=True)"
-    #     python3 compare.py --num_inputs 2
+    - name: (Test GridSample)
+      run: |
+        python3 examples/grid_sample/export_model.py
+        python3 -c "import sys, subprocess, mo_onnx; subprocess.run([sys.executable, mo_onnx.__file__, '--input_model=model.onnx', '--extension=mo_extensions'], check=True)"
+        python3 compare.py --num_inputs 2
 
 
   # publish:
