@@ -10,7 +10,7 @@
 #include "ie_parallel.hpp"
 #include <opencv2/core/core_c.h>
 
-std::shared_ptr<InferenceEngine::details::SharedObjectLoader> so;
+std::unique_ptr<InferenceEngine::details::SharedObjectLoader> so;
 using cvCreateMatHeaderF = CvMat*(int, int, int);
 using cvSetDataF = void(CvArr*, void*, int);
 using cvReleaseMatF = void(CvMat**);
@@ -23,11 +23,11 @@ bool loadOpenCV() {
         loaded = true;
         try {
 #ifdef _WIN32
-            so = std::make_shared<InferenceEngine::details::SharedObjectLoader>("opencv_core.dll");
+            so.reset(new InferenceEngine::details::SharedObjectLoader("opencv_core.dll"));
 #elif defined(__APPLE__)
-            so = std::make_shared<InferenceEngine::details::SharedObjectLoader>("libopencv_core.dylib");
+            so.reset(new InferenceEngine::details::SharedObjectLoader("libopencv_core.dylib"));
 #else
-            so = std::make_shared<InferenceEngine::details::SharedObjectLoader>("libopencv_core.so");
+            so.reset(new InferenceEngine::details::SharedObjectLoader("libopencv_core.so"));
 #endif
         } catch (InferenceEngine::details::InferenceEngineException& ex) {
             return false;

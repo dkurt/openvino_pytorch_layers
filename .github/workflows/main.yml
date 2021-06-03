@@ -93,37 +93,38 @@ jobs:
         name: "wheel_win"
         path: "*.whl"
 
-  # build_mac:
-  #   runs-on: macos-latest
+  build_mac:
+    runs-on: macos-10.15
 
-  #   steps:
-  #   - uses: actions/checkout@v2
+    steps:
+    - uses: actions/checkout@v2
 
-  #   - name: Install OpenVINO
-  #     run: |
-  #       wget -q https://registrationcenter-download.intel.com/akdlm/irc_nas/17660/m_openvino_toolkit_p_2021.3.394.dmg
-  #       tar -xf l_openvino_toolkit_p_2021.2.185.tgz
-  #       cd l_openvino_toolkit_p_2021.2.185
-  #       sudo ./install.sh --silent --accept_eula --install_dir /opt/intel
+    - name: Install OpenVINO
+      run: |
+        wget -q https://registrationcenter-download.intel.com/akdlm/irc_nas/17660/m_openvino_toolkit_p_2021.3.394.dmg
+        hdiutil attach m_openvino_toolkit_p_2021.3.394.dmg
+        cd /Volumes/m_openvino_toolkit_p_2021.3.394/m_openvino_toolkit_p_2021.3.394.app/Contents/MacOS/
+        sudo ./install.sh -s silent.cfg --accept_eula
 
-  #   - name: Build CPU extensions
-  #     run: |
-  #       source /opt/intel/openvino_2021/bin/setupvars.sh
-  #       cd user_ie_extensions
-  #       mkdir build && cd build
-  #       ../../cmake-3.20.2-linux-x86_64/bin/cmake .. -DCMAKE_BUILD_TYPE=Release
-  #       make -j$(nproc --all)
+    - name: Build CPU extensions
+      run: |
+        source /opt/intel/openvino_2021/bin/setupvars.sh
+        cd user_ie_extensions
+        mkdir build && cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release
+        make -j$(nproc --all)
 
-  #   - name: Build wheel
-  #     run: |
-  #       python3 -m pip install wheel
-  #       EXT_LIB=user_ie_extensions/build/libuser_cpu_extension.so python3 setup.py build bdist_wheel
-  #       mv dist/*.whl openvino_extensions-${{env.VERSION}}-py3-none-manylinux2014_x86_64.whl
+    - name: Build wheel
+      run: |
+        python3 -m pip install wheel
+        ls user_ie_extensions/build/
+        EXT_LIB=user_ie_extensions/build/libuser_cpu_extension.dylib python3 setup.py build bdist_wheel
+        mv dist/*.whl openvino_extensions-${{env.VERSION}}-py3-none-macosx_10_15_x86_64.whl
 
-  #   - uses: actions/upload-artifact@v2
-  #     with:
-  #       name: "wheel_lnx"
-  #       path: "*.whl"
+    - uses: actions/upload-artifact@v2
+      with:
+        name: "wheel_mac"
+        path: "*.whl"
 
   test_lnx:
     strategy:
@@ -188,18 +189,18 @@ jobs:
         python3 compare.py --num_inputs 2
 
 
-  # publish:
-  #   # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-  #   needs: [test_lnx]
-  #   runs-on: ubuntu-18.04
-  #   steps:
-  #     - uses: actions/download-artifact@v2
-  #
-  #     - name: Publish
-  #       env:
-  #         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-  #         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-  #       run: |
-  #         python3 -m pip install --upgrade pip
-  #         python3 -m pip install twine
-  #         python3 -m twine upload wheel*/*.whl
+  publish:
+    # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: [test_lnx, build_win, build_mac]
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/download-artifact@v2
+  
+      - name: Publish
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install twine
+          python3 -m twine upload wheel*/*.whl
