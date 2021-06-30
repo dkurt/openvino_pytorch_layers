@@ -11,8 +11,8 @@ on:
     branches: [ master ]
 
 env:
-  OPENVINO_VERSION: 2021.3
-  VERSION: 0.0.4
+  OPENVINO_VERSION: 2021.4
+  VERSION: 2021.4.1
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -37,7 +37,7 @@ jobs:
         yum install -y yum-utils
         yum-config-manager --add-repo https://yum.repos.intel.com/openvino/2021/setup/intel-openvino-2021.repo
         rpm --import https://yum.repos.intel.com/openvino/2021/setup/RPM-GPG-KEY-INTEL-OPENVINO-2021
-        yum install -y intel-openvino-runtime-centos7-2021.3.394.x86_64
+        yum install -y intel-openvino-runtime-centos7-2021.4.582.x86_64
 
     - name: Build CPU extensions
       run: |
@@ -66,7 +66,7 @@ jobs:
 
     - name: Install OpenVINO
       run: |
-        curl https://registrationcenter-download.intel.com/akdlm/irc_nas/17505/w_openvino_toolkit_p_2021.2.185.exe -o openvino.exe
+        curl https://registrationcenter-download.intel.com/akdlm/irc_nas/17987/w_openvino_toolkit_p_2021.4.582.exe -o openvino.exe
         start /WAIT openvino.exe --s --a install --eula=accept --output=log.txt
       shell: cmd
 
@@ -101,9 +101,9 @@ jobs:
 
     - name: Install OpenVINO
       run: |
-        wget -q https://registrationcenter-download.intel.com/akdlm/irc_nas/17660/m_openvino_toolkit_p_2021.3.394.dmg
-        hdiutil attach m_openvino_toolkit_p_2021.3.394.dmg
-        cd /Volumes/m_openvino_toolkit_p_2021.3.394/m_openvino_toolkit_p_2021.3.394.app/Contents/MacOS/
+        wget -q https://registrationcenter-download.intel.com/akdlm/irc_nas/17986/m_openvino_toolkit_p_2021.4.582.dmg
+        hdiutil attach m_openvino_toolkit_p_2021.4.582.dmg
+        cd /Volumes/m_openvino_toolkit_p_2021.4.582/m_openvino_toolkit_p_2021.4.582.app/Contents/MacOS/
         sudo ./install.sh -s silent.cfg --accept_eula
 
     - name: Build CPU extensions
@@ -191,7 +191,7 @@ jobs:
 
   publish:
     # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    needs: [test_lnx, build_win, build_mac]
+    needs: [build_lnx, build_win, build_mac]
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/download-artifact@v2
