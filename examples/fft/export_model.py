@@ -16,7 +16,8 @@ class MyModel(nn.Module):
     def forward(self, x):
         y = self.fft.apply(x, False)
         y = y * 2
-        y = self.fft.apply(y, True)
+        # TODO: there is a bug with "inverse" data attribute in OpenVINO 2021.4
+        # y = self.fft.apply(y, True)
         return y
 
 parser = argparse.ArgumentParser(description='Generate ONNX model and test data')
