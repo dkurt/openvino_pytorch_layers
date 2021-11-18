@@ -11,11 +11,17 @@ on:
     branches: [ master ]
 
 env:
-  OPENVINO_VERSION: 2021.4
-  VERSION: 2021.4.1
-  DIST_VERSION: 2021.4.582
-  DIST_WIN: https://registrationcenter-download.intel.com/akdlm/irc_nas/17987/w_openvino_toolkit_p_2021.4.582.exe
-  DIST_MAC: https://registrationcenter-download.intel.com/akdlm/irc_nas/17986/m_openvino_toolkit_p_2021.4.582.dmg
+#   OPENVINO_VERSION: 2021.4
+#   VERSION: 2021.4.1
+#   DIST_VERSION: 2021.4.582
+#   DIST_WIN: https://registrationcenter-download.intel.com/akdlm/irc_nas/17987/w_openvino_toolkit_p_2021.4.582.exe
+#   DIST_MAC: https://registrationcenter-download.intel.com/akdlm/irc_nas/17986/m_openvino_toolkit_p_2021.4.582.dmg
+  OPENVINO_VERSION: 2021.3
+  VERSION: 2021.3
+  DIST_VERSION: 2021.3.394
+  DIST_WIN: https://registrationcenter-download.intel.com/akdlm/irc_nas/17661/w_openvino_toolkit_p_2021.3.394.exe
+  DIST_MAC: https://registrationcenter-download.intel.com/akdlm/irc_nas/17660/m_openvino_toolkit_p_2021.3.394.dmg
+
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -104,7 +110,7 @@ jobs:
 
     - name: Install OpenVINO
       run: |
-        curl ${[env.DIST_MAC}} -o openvino.dmg
+        curl ${{env.DIST_MAC}} -o openvino.dmg
         hdiutil attach openvino.dmg
         cd /Volumes/m_openvino_toolkit_p_${{env.DIST_VERSION}}/m_openvino_toolkit_p_${{env.DIST_VERSION}}.app/Contents/MacOS/
         sudo ./install.sh -s silent.cfg --accept_eula
