@@ -12,7 +12,7 @@ on:
 
 env:
   OPENVINO_VERSION: 2021.4
-  WHEEL_VERSION: 2021.4.1
+  VERSION: 2021.4.1
   DIST_VERSION: 2021.4.582
   DIST_WIN: https://registrationcenter-download.intel.com/akdlm/irc_nas/17987/w_openvino_toolkit_p_${{env.DIST_VERSION}}.exe
   DIST_MAC: https://registrationcenter-download.intel.com/akdlm/irc_nas/17986/m_openvino_toolkit_p_${{env.DIST_VERSION}}.dmg
