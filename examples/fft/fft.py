@@ -3,7 +3,7 @@ import torch
 class FFT(torch.autograd.Function):
     @staticmethod
     def symbolic(g, x, inverse):
-        return g.op('FFT', x,
+        return g.op('IFFT' if inverse else 'FFT', x,
                     inverse_i=inverse)
 
     @staticmethod

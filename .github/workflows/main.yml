@@ -11,8 +11,11 @@ on:
     branches: [ master ]
 
 env:
-  OPENVINO_VERSION: 2021.4
-  VERSION: 2021.4.1
+  OPENVINO_VERSION: 2021.4.2
+  VERSION: 2021.4.2
+  DIST_VERSION: 2021.4.752
+  DIST_WIN: https://registrationcenter-download.intel.com/akdlm/irc_nas/18320/w_openvino_toolkit_p_2021.4.752.exe
+  DIST_MAC: https://registrationcenter-download.intel.com/akdlm/irc_nas/18317/m_openvino_toolkit_p_2021.4.752.dmg
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -37,7 +40,7 @@ jobs:
         yum install -y yum-utils
         yum-config-manager --add-repo https://yum.repos.intel.com/openvino/2021/setup/intel-openvino-2021.repo
         rpm --import https://yum.repos.intel.com/openvino/2021/setup/RPM-GPG-KEY-INTEL-OPENVINO-2021
-        yum install -y intel-openvino-runtime-centos7-2021.4.582.x86_64
+        yum install -y intel-openvino-runtime-centos7-${{env.DIST_VERSION}}.x86_64
 
     - name: Build CPU extensions
       run: |
@@ -66,7 +69,7 @@ jobs:
 
     - name: Install OpenVINO
       run: |
-        curl https://registrationcenter-download.intel.com/akdlm/irc_nas/17987/w_openvino_toolkit_p_2021.4.582.exe -o openvino.exe
+        curl ${{env.DIST_WIN}} -o openvino.exe
         start /WAIT openvino.exe --s --a install --eula=accept --output=log.txt
       shell: cmd
 
@@ -101,9 +104,9 @@ jobs:
 
     - name: Install OpenVINO
       run: |
-        wget -q https://registrationcenter-download.intel.com/akdlm/irc_nas/17986/m_openvino_toolkit_p_2021.4.582.dmg
-        hdiutil attach m_openvino_toolkit_p_2021.4.582.dmg
-        cd /Volumes/m_openvino_toolkit_p_2021.4.582/m_openvino_toolkit_p_2021.4.582.app/Contents/MacOS/
+        curl ${{env.DIST_MAC}} -o openvino.dmg
+        hdiutil attach openvino.dmg
+        cd /Volumes/m_openvino_toolkit_p_${{env.DIST_VERSION}}/m_openvino_toolkit_p_${{env.DIST_VERSION}}.app/Contents/MacOS/
         sudo ./install.sh -s silent.cfg --accept_eula
 
     - name: Build CPU extensions
@@ -189,18 +192,18 @@ jobs:
         python3 compare.py --num_inputs 2
 
 
-#   publish:
-#     # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-#     needs: [build_lnx, build_win, build_mac]
-#     runs-on: ubuntu-18.04
-#     steps:
-#       - uses: actions/download-artifact@v2
+  publish:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: [test_lnx, build_win, build_mac]
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: actions/download-artifact@v2
   
-#       - name: Publish
-#         env:
-#           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-#           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-#         run: |
-#           python3 -m pip install --upgrade pip
-#           python3 -m pip install twine
-#           python3 -m twine upload wheel*/*.whl
+      - name: Publish
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install twine
+          python3 -m twine upload wheel*/*.whl
