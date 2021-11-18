@@ -6,6 +6,7 @@
 using namespace TemplateExtension;
 
 constexpr ngraph::NodeTypeInfo FFTOp::type_info;
+constexpr ngraph::NodeTypeInfo IFFTOp::type_info;
 
 //! [op:ctor]
 FFTOp::FFTOp(const ngraph::Output<ngraph::Node>& inp, bool _inverse) : Op({inp}) {
@@ -13,6 +14,8 @@ FFTOp::FFTOp(const ngraph::Output<ngraph::Node>& inp, bool _inverse) : Op({inp})
     inverse = _inverse;
 }
 //! [op:ctor]
+
+IFFTOp::IFFTOp(const ngraph::Output<ngraph::Node>& inp, bool _inverse) : FFTOp({inp, true}) {}
 
 //! [op:validate]
 void FFTOp::validate_and_infer_types() {
