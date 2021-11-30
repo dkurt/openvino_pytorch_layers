@@ -38,6 +38,14 @@ public:
     bool inverse;
 };
 
+class IFFTOp : public FFTOp {
+public:
+    static constexpr ngraph::NodeTypeInfo type_info{"IFFT", 0};
+
+    IFFTOp() = default;
+    IFFTOp(const ngraph::Output<ngraph::Node>& inp, bool inverse);
+};
+
 class GridSampleOp : public ngraph::op::Op {
 public:
     static constexpr ngraph::NodeTypeInfo type_info{"GridSample", 0};

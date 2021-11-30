@@ -4,10 +4,37 @@
 #include "cpu_kernel.hpp"
 #include "op.hpp"
 #include <details/ie_exception.hpp>
+#include <details/ie_so_loader.h>
 #include <ie_layouts.h>
-#include "ie_parallel.hpp"
 
-#include <opencv2/opencv.hpp>
+#include "ie_parallel.hpp"
+#include <opencv2/core/core_c.h>
+
+std::unique_ptr<InferenceEngine::details::SharedObjectLoader> so;
+using cvCreateMatHeaderF = CvMat*(int, int, int);
+using cvSetDataF = void(CvArr*, void*, int);
+using cvReleaseMatF = void(CvMat**);
+using cvDftF = void(const CvArr*, CvArr*, int, int);
+using cvScaleF = void(const CvArr*, CvArr*, double, double);
+
+bool loadOpenCV() {
+    static bool loaded = false;
+    if (!loaded) {
+        loaded = true;
+        try {
+#ifdef _WIN32
+            so.reset(new InferenceEngine::details::SharedObjectLoader("opencv_core.dll"));
+#elif defined(__APPLE__)
+            so.reset(new InferenceEngine::details::SharedObjectLoader("libopencv_core.dylib"));
+#else
+            so.reset(new InferenceEngine::details::SharedObjectLoader("libopencv_core.so"));
+#endif
+        } catch (InferenceEngine::details::InferenceEngineException& ex) {
+            return false;
+        }
+    }
+    return loaded;
+}
 
 using namespace TemplateExtension;
 
@@ -60,6 +87,10 @@ InferenceEngine::StatusCode FFTImpl::getSupportedConfigurations(std::vector<Infe
 
 //! [cpu_implementation:init]
 InferenceEngine::StatusCode FFTImpl::init(InferenceEngine::LayerConfig &config, InferenceEngine::ResponseDesc *resp) noexcept {
+    if (!loadOpenCV()) {
+        THROW_IE_EXCEPTION << "Failed to load OpenCV!";
+    }
+
     if (config.inConfs.size() != 1 || config.outConfs.size() != 1) {
         THROW_IE_EXCEPTION << "Operation cannot be initialized with incorrect number of inputs/outputs!";
     }
@@ -72,62 +103,63 @@ InferenceEngine::StatusCode FFTImpl::init(InferenceEngine::LayerConfig &config, 
 }
 //! [cpu_implementation:init]
 
-static cv::Mat infEngineBlobToMat(const InferenceEngine::Blob::Ptr& blob)
-{
-    // NOTE: Inference Engine sizes are reversed.
-    std::vector<size_t> dims = blob->getTensorDesc().getDims();
-    std::vector<int> size(dims.begin(), dims.end());
-    auto precision = blob->getTensorDesc().getPrecision();
-    CV_Assert(precision == InferenceEngine::Precision::FP32);
-    return cv::Mat(size, CV_32F, (void*)blob->buffer());
-}
-
 //! [cpu_implementation:execute]
 InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::Ptr> &inputs,
-                                                      std::vector<InferenceEngine::Blob::Ptr> &outputs,
-                                                      InferenceEngine::ResponseDesc *resp) noexcept {
-    cv::Mat inp = infEngineBlobToMat(inputs[0]);
-    cv::Mat out = infEngineBlobToMat(outputs[0]);
+                                             std::vector<InferenceEngine::Blob::Ptr> &outputs,
+                                             InferenceEngine::ResponseDesc *resp) noexcept {
+    static auto cvSetData = reinterpret_cast<cvSetDataF*>(so->get_symbol("cvSetData"));
+    static auto cvCreateMatHeader = reinterpret_cast<cvCreateMatHeaderF*>(so->get_symbol("cvCreateMatHeader"));
+    static auto cvDFT = reinterpret_cast<cvDftF*>(so->get_symbol("cvDFT"));
+    static auto cvScale = reinterpret_cast<cvScaleF*>(so->get_symbol("cvConvertScale"));
+    static auto cvReleaseMat = reinterpret_cast<cvReleaseMatF*>(so->get_symbol("cvReleaseMat"));
 
-    CV_CheckEQ(inp.size[inp.dims - 1], 2, "");
+    float* inpData = inputs[0]->buffer();
+    float* outData = outputs[0]->buffer();
+    std::vector<size_t> dims = inputs[0]->getTensorDesc().getDims();
 
-    if (inp.dims == 5) {
-        const int batch = inp.size[0];
-        const int channels = inp.size[1];
-        int rows = inp.size[2];
-        int cols = inp.size[3];
-        inp = inp.reshape(1, batch * channels);
-        out = out.reshape(1, batch * channels);
+    if (dims.size() == 5) {
+        const int batch = dims[0];
+        const int channels = dims[1];
+        int rows = dims[2];
+        int cols = dims[3];
+        int planeSize = rows * cols * 2;  // 2 is last dimension size
         InferenceEngine::parallel_for(batch * channels, [&](size_t d) {
-            cv::Mat inpSlice(rows, cols, CV_32FC2, inp.ptr<float>(d));
-            cv::Mat outSlice(rows, cols, CV_32FC2, out.ptr<float>(d));
+            CvMat* inp = cvCreateMatHeader(rows, cols, CV_32FC2);
+            CvMat* out = cvCreateMatHeader(rows, cols, CV_32FC2);
+            cvSetData(inp, reinterpret_cast<void*>(inpData + d * planeSize), cols * 2 * sizeof(float));
+            cvSetData(out, reinterpret_cast<void*>(outData + d * planeSize), cols * 2 * sizeof(float));
             if (inverse)
-                cv::idft(inpSlice, outSlice);
+                cvDFT(inp, out, CV_DXT_INVERSE, 0);
             else
-                cv::dft(inpSlice, outSlice);
+                cvDFT(inp, out, CV_DXT_FORWARD, 0);
+            cvScale(out, out, 1.0 / sqrtf(cols * rows), 0);
+
+            cvReleaseMat(&inp);
+            cvReleaseMat(&out);
         });
-        out /= sqrtf(cols * rows);
     } else {
         int rows, cols;
-        if (inp.dims == 4) {
-            rows = inp.size[0] * inp.size[1];
-            cols = inp.size[2];
-        } else if (inp.dims == 3) {
-            rows = inp.size[0];
-            cols = inp.size[1];
-        } else {
-            CV_Assert(inp.dims == 3 || inp.dims == 4);
+        if (dims.size() == 4) {
+            rows = dims[0] * dims[1];
+            cols = dims[2];
+        } else if (dims.size() == 3) {
+            rows = dims[0];
+            cols = dims[1];
         }
-        inp = cv::Mat(rows, cols, CV_32FC2, inp.ptr<float>());
-        out = cv::Mat(rows, cols, CV_32FC2, out.ptr<float>());
+        CvMat* inp = cvCreateMatHeader(rows, cols, CV_32FC2);
+        CvMat* out = cvCreateMatHeader(rows, cols, CV_32FC2);
+        cvSetData(inp, reinterpret_cast<void*>(inpData), cols * 2 * sizeof(float));
+        cvSetData(out, reinterpret_cast<void*>(outData), cols * 2 * sizeof(float));
 
         if (inverse)
-            cv::idft(inp, out, cv::DFT_ROWS);
+            cvDFT(inp, out, CV_DXT_INVERSE | CV_DXT_ROWS, 0);
         else
-            cv::dft(inp, out, cv::DFT_ROWS);
-        out /= sqrtf(cols);
-    }
+            cvDFT(inp, out, CV_DXT_FORWARD | CV_DXT_ROWS, 0);
+        cvScale(out, out, 1.0 / sqrtf(cols), 0);
 
+        cvReleaseMat(&inp);
+        cvReleaseMat(&out);
+    }
     return InferenceEngine::OK;
 }
 //! [cpu_implementation:execute]

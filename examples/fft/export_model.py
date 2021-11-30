@@ -16,6 +16,7 @@ class MyModel(nn.Module):
     def forward(self, x):
         y = self.fft.apply(x, False)
         y = y * 2
+        # TODO: there is a bug with "inverse" data attribute in OpenVINO 2021.4
         y = self.fft.apply(y, True)
         return y
 
