@@ -123,9 +123,6 @@ static void fftshift(CvMat* src, int rows, int cols) {
 
     int h = rows / 2;
     int w = cols / 2;
-
-    // CvMat* tl, tr, bl, br;
-
    
 
     float* src_data;
@@ -136,24 +133,6 @@ static void fftshift(CvMat* src, int rows, int cols) {
     std::cout << "INPUT step size" << std::endl;
     std::cout << src_step / sizeof(float) << std::endl;
     std::cout << src_size.height << " " << src_size.width <<std::endl;
-    
-    // std::cout << "INPUT" << std::endl;
-
-    // 
-
-    // // for(int i = step1; i < size1.width * size1.height; i++) {
-    // //     std::cout << (float)data1[i*step1] << " ";
-    // //     std::cout << (float)data1[i*step1 + 1] << " ";
-    // //     std::cout << (float)data1[i*step1 + 2] << " ";
-    // //     std::cout << (float)data1[i*step1 + 3] << " ";
-    // // }
-    // // std::cout << std::endl;
-
-    // for(int y = 0; y < size1.height; y++, data1 += step1 ) {
-    //     for(int x = 0; x < size1.width; x++)
-    //         std::cout << data1[x] << std::endl;
-    //     std::cout << std::endl;
-    // }
 
     std::cout << "h = " << h <<std::endl;
     std::cout << "w = " << w <<std::endl;
@@ -183,14 +162,6 @@ static void fftshift(CvMat* src, int rows, int cols) {
     cvCopy(tmp, bl, maskMat);
 
     std::cout << "END FFTSHIFT" << std::endl;
-
-    // cv::Mat tmp = tl.clone();
-    // br.copyTo(tl);
-    // tmp.copyTo(br);
-
-    // tr.copyTo(tmp);
-    // bl.copyTo(tr);
-    // tmp.copyTo(bl);
 
 }
 
