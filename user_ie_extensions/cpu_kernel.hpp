@@ -40,7 +40,7 @@ public:
 private:
     ngraph::Shape inpShape;
     ngraph::Shape outShape;
-    bool inverse;
+    bool inverse, centered;
     std::string error;
 };
 

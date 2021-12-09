@@ -56,6 +56,7 @@ FFTImpl::FFTImpl(const std::shared_ptr<ngraph::Node> &node) {
     inpShape = castedNode->get_input_shape(0);
     outShape = castedNode->get_output_shape(0);
     inverse = castedNode->inverse;
+    centered = castedNode->centered;
 }
 //! [cpu_implementation:ctor]
 
@@ -150,6 +151,9 @@ static void fftshift(CvMat* src) {
 InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::Ptr> &inputs,
                                              std::vector<InferenceEngine::Blob::Ptr> &outputs,
                                              InferenceEngine::ResponseDesc *resp) noexcept {
+
+    std::cout << "HeLLO" <<std::endl;
+    std::cout << centered <<std::endl;
     static auto cvSetData = reinterpret_cast<cvSetDataF*>(so->get_symbol("cvSetData"));
     static auto cvCreateMatHeader = reinterpret_cast<cvCreateMatHeaderF*>(so->get_symbol("cvCreateMatHeader"));
     static auto cvDFT = reinterpret_cast<cvDftF*>(so->get_symbol("cvDFT"));
@@ -177,17 +181,17 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             cvSetData(inp, reinterpret_cast<void*>(inpData + d * planeSize), cols * 2 * sizeof(float));
             cvSetData(out, reinterpret_cast<void*>(outData + d * planeSize), cols * 2 * sizeof(float));
 
-            fftshift(inp);
+            if (centered)
+                fftshift(inp);
 
-            if (inverse) {
+            if (inverse)
                 cvDFT(inp, out, CV_DXT_INVERSE, 0);
-            }
-            else {
+            else
                 cvDFT(inp, out, CV_DXT_FORWARD, 0);
-            }
             cvScale(out, out, 1.0 / sqrtf(cols * rows), 0);
 
-            fftshift(out);
+            if (centered)
+                fftshift(out);
 
             cvReleaseMat(&inp);
             cvReleaseMat(&out);

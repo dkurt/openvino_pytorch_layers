@@ -9,13 +9,14 @@ constexpr ngraph::NodeTypeInfo FFTOp::type_info;
 constexpr ngraph::NodeTypeInfo IFFTOp::type_info;
 
 //! [op:ctor]
-FFTOp::FFTOp(const ngraph::Output<ngraph::Node>& inp, bool _inverse) : Op({inp}) {
+FFTOp::FFTOp(const ngraph::Output<ngraph::Node>& inp, bool _inverse, bool _centered) : Op({inp}) {
     constructor_validate_and_infer_types();
     inverse = _inverse;
+    centered = _centered;
 }
 //! [op:ctor]
 
-IFFTOp::IFFTOp(const ngraph::Output<ngraph::Node>& inp, bool _inverse) : FFTOp({inp, true}) {}
+IFFTOp::IFFTOp(const ngraph::Output<ngraph::Node>& inp, bool _inverse, bool _centered) : FFTOp({inp, true, false}) {}
 
 //! [op:validate]
 void FFTOp::validate_and_infer_types() {
@@ -29,13 +30,14 @@ std::shared_ptr<ngraph::Node> FFTOp::clone_with_new_inputs(const ngraph::OutputV
     if (new_args.size() != 1) {
         throw ngraph::ngraph_error("Incorrect number of new arguments");
     }
-    return std::make_shared<FFTOp>(new_args.at(0), inverse);
+    return std::make_shared<FFTOp>(new_args.at(0), inverse, centered);
 }
 //! [op:copy]
 
 //! [op:visit_attributes]
 bool FFTOp::visit_attributes(ngraph::AttributeVisitor &visitor) {
     visitor.on_attribute("inverse", inverse);
+    visitor.on_attribute("centered", centered);
     return true;
 }
 //! [op:visit_attributes]
