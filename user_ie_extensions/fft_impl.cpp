@@ -151,9 +151,6 @@ static void fftshift(CvMat* src) {
 InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::Ptr> &inputs,
                                              std::vector<InferenceEngine::Blob::Ptr> &outputs,
                                              InferenceEngine::ResponseDesc *resp) noexcept {
-
-    std::cout << "HeLLO" <<std::endl;
-    std::cout << centered <<std::endl;
     static auto cvSetData = reinterpret_cast<cvSetDataF*>(so->get_symbol("cvSetData"));
     static auto cvCreateMatHeader = reinterpret_cast<cvCreateMatHeaderF*>(so->get_symbol("cvCreateMatHeader"));
     static auto cvDFT = reinterpret_cast<cvDftF*>(so->get_symbol("cvDFT"));
