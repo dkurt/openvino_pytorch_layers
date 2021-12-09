@@ -16,7 +16,6 @@ using cvSetDataF = void(CvArr*, void*, int);
 using cvReleaseMatF = void(CvMat**);
 using cvDftF = void(const CvArr*, CvArr*, int, int);
 using cvScaleF = void(const CvArr*, CvArr*, double, double);
-
 using cvCloneMatF = CvMat*(const CvMat*);
 using cvCopyF = void(const CvArr*, const CvArr*, const CvArr*);
 using cvInitMatHeaderF = CvMat*(CvMat*, int, int, int, void*, int);
@@ -109,7 +108,6 @@ InferenceEngine::StatusCode FFTImpl::init(InferenceEngine::LayerConfig &config, 
 //! [cpu_implementation:init]
 
 static void fftshift(CvMat* src) {
-    std::cout << "BEGIN FFTSHIFT" << std::endl;
     static auto cvCloneMat = reinterpret_cast<cvCloneMatF*>(so->get_symbol("cvCloneMat"));
     static auto cvCopy = reinterpret_cast<cvCopyF*>(so->get_symbol("cvCopy"));
     static auto cvInitMatHeader = reinterpret_cast<cvInitMatHeaderF*>(so->get_symbol("cvInitMatHeader"));
@@ -127,21 +125,15 @@ static void fftshift(CvMat* src) {
     int h = src_size.height / 2;
     int w = src_size.width / 2;
 
-    std::cout << "INPUT step size" << std::endl;
-    std::cout << src_step / sizeof(float) << std::endl;
-    std::cout << src_size.height << " " << src_size.width <<std::endl;
-    std::cout << src_size.height << " " << src_size.width <<std::endl;
-    std::cout << "h = " << h <<std::endl;
-    std::cout << "w = " << w <<std::endl;
-
-    src_step /= sizeof(src_data[0]);
+    src_step /= sizeof(float);
     CvMat* tl = new CvMat();
-    cvInitMatHeader(tl, h, w, CV_32FC2, src_data, src_step * sizeof(float));
     CvMat* tr = new CvMat();
-    cvInitMatHeader(tr, h, w, CV_32FC2, src_data + (src_step / 2), src_step * sizeof(float));
     CvMat* bl = new CvMat();
-    cvInitMatHeader(bl, h, w, CV_32FC2, src_data + h * src_step, src_step * sizeof(float));
     CvMat* br = new CvMat();
+
+    cvInitMatHeader(tl, h, w, CV_32FC2, src_data, src_step * sizeof(float));
+    cvInitMatHeader(tr, h, w, CV_32FC2, src_data + (src_step / 2), src_step * sizeof(float));
+    cvInitMatHeader(bl, h, w, CV_32FC2, src_data + h * src_step, src_step * sizeof(float));
     cvInitMatHeader(br, h, w, CV_32FC2, src_data + (h * src_step + src_step / 2), src_step * sizeof(float));
 
     CvArr* mask = 0;
@@ -164,11 +156,16 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
     static auto cvScale = reinterpret_cast<cvScaleF*>(so->get_symbol("cvConvertScale"));
     static auto cvReleaseMat = reinterpret_cast<cvReleaseMatF*>(so->get_symbol("cvReleaseMat"));
 
+    static auto cvCloneMat = reinterpret_cast<cvCloneMatF*>(so->get_symbol("cvCloneMat"));
+    static auto cvCopy = reinterpret_cast<cvCopyF*>(so->get_symbol("cvCopy"));
+    static auto cvInitMatHeader = reinterpret_cast<cvInitMatHeaderF*>(so->get_symbol("cvInitMatHeader"));
+    static auto cvGetRawData = reinterpret_cast<cvGetRawDataF*>(so->get_symbol("cvGetRawData"));
+
     float* inpData = inputs[0]->buffer();
     float* outData = outputs[0]->buffer();
     std::vector<size_t> dims = inputs[0]->getTensorDesc().getDims();
 
-    if (dims.size() == 5) {        
+    if (dims.size() == 5) {
         const int batch = dims[0];
         const int channels = dims[1];
         int rows = dims[2];
@@ -188,16 +185,14 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             else {
                 cvDFT(inp, out, CV_DXT_FORWARD, 0);
             }
-
             cvScale(out, out, 1.0 / sqrtf(cols * rows), 0);
 
-            // fftshift(inp);
+            fftshift(out);
 
             cvReleaseMat(&inp);
             cvReleaseMat(&out);
         });
     } else {
-        std::cout << "ELSE" << std::endl;
         int rows, cols;
         if (dims.size() == 4) {
             rows = dims[0] * dims[1];
