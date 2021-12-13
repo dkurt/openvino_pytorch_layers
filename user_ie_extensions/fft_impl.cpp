@@ -113,29 +113,32 @@ static void fftshift(CvMat* src) {
     static auto cvCopy = reinterpret_cast<cvCopyF*>(so->get_symbol("cvCopy"));
     static auto cvInitMatHeader = reinterpret_cast<cvInitMatHeaderF*>(so->get_symbol("cvInitMatHeader"));
     static auto cvGetRawData = reinterpret_cast<cvGetRawDataF*>(so->get_symbol("cvGetRawData"));
+    // static auto cvReleaseMat = reinterpret_cast<cvReleaseMatF*>(so->get_symbol("cvReleaseMat"));
+
 
     // tl | tr        br | bl
     // ---+---   ->   ---+---
     // bl | br        tr | tl
 
-    float* src_data;
-    int src_step;
-    CvSize src_size;
-    cvGetRawData(src, (uchar**)&src_data, &src_step, &src_size);
+    float* data;
+    int step;
+    CvSize size;
+    cvGetRawData(src, (uchar**)&data, &step, &size);
 
-    int h = src_size.height / 2;
-    int w = src_size.width / 2;
+    int height = size.height;
+    int width = size.width;
+    int h = height / 2;
+    int w = width / 2;
 
-    src_step /= sizeof(float);
     CvMat* tl = new CvMat();
     CvMat* tr = new CvMat();
     CvMat* bl = new CvMat();
     CvMat* br = new CvMat();
 
-    cvInitMatHeader(tl, h, w, CV_32FC2, src_data, src_step * sizeof(float));
-    cvInitMatHeader(tr, h, w, CV_32FC2, src_data + (src_step / 2), src_step * sizeof(float));
-    cvInitMatHeader(bl, h, w, CV_32FC2, src_data + h * src_step, src_step * sizeof(float));
-    cvInitMatHeader(br, h, w, CV_32FC2, src_data + (h * src_step + src_step / 2), src_step * sizeof(float));
+    cvInitMatHeader(tl, h, w, CV_32FC2, data, step);
+    cvInitMatHeader(tr, h, w, CV_32FC2, data + width, step);
+    cvInitMatHeader(bl, h, w, CV_32FC2, data + height * width, step);
+    cvInitMatHeader(br, h, w, CV_32FC2, data + height * width + width, step);
 
     CvArr* mask = 0;
     CvMat* tmp = cvCloneMat(tl);
@@ -145,6 +148,8 @@ static void fftshift(CvMat* src) {
     cvCopy(tr, tmp, mask);
     cvCopy(bl, tr, mask);
     cvCopy(tmp, bl, mask);
+
+    // cvReleaseMat(&tl);
 }
 
 //! [cpu_implementation:execute]
