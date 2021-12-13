@@ -12,7 +12,7 @@ on:
 
 env:
   OPENVINO_VERSION: 2021.4.2
-  VERSION: 2021.4.2
+  VERSION: 2021.4.2.1
   DIST_VERSION: 2021.4.752
   DIST_WIN: https://registrationcenter-download.intel.com/akdlm/irc_nas/18320/w_openvino_toolkit_p_2021.4.752.exe
   DIST_MAC: https://registrationcenter-download.intel.com/akdlm/irc_nas/18317/m_openvino_toolkit_p_2021.4.752.dmg
@@ -183,6 +183,12 @@ jobs:
         done
     
         python3 examples/fft/export_model.py --shape 3 7 140 100 2
+        python3 compare.py
+
+    - name: (Test FFT ROLL)
+      run: |
+        python3 examples/fft/export_model_with_roll.py
+        python3 -m mo --input_model model.onnx --extension mo_extensions
         python3 compare.py
 
     - name: (Test GridSample)

@@ -16,7 +16,7 @@ FFTOp::FFTOp(const ngraph::Output<ngraph::Node>& inp, bool _inverse, bool _cente
 }
 //! [op:ctor]
 
-IFFTOp::IFFTOp(const ngraph::Output<ngraph::Node>& inp, bool _inverse, bool _centered) : FFTOp({inp, true, false}) {}
+IFFTOp::IFFTOp(const ngraph::Output<ngraph::Node>& inp, bool _inverse, bool _centered) : FFTOp({inp, true, _centered}) {}
 
 //! [op:validate]
 void FFTOp::validate_and_infer_types() {
