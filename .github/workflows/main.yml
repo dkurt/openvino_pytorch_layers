@@ -181,7 +181,7 @@ jobs:
           python3 -m mo --input_model model.onnx --extension mo_extensions
           python3 compare.py
         done
-    
+
         python3 examples/fft/export_model.py --shape 3 7 140 100 2
         python3 compare.py
 
@@ -204,7 +204,7 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/download-artifact@v2
-  
+
       - name: Publish
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
@@ -212,4 +212,4 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install twine
-          python3 -m twine upload wheel*/*.whl | true
+          python3 -m twine upload wheel*/*.whl --skip-existing
