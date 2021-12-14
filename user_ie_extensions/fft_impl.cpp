@@ -16,6 +16,10 @@ using cvSetDataF = void(CvArr*, void*, int);
 using cvReleaseMatF = void(CvMat**);
 using cvDftF = void(const CvArr*, CvArr*, int, int);
 using cvScaleF = void(const CvArr*, CvArr*, double, double);
+using cvCloneMatF = CvMat*(const CvMat*);
+using cvCopyF = void(const CvArr*, const CvArr*, const CvArr*);
+using cvInitMatHeaderF = CvMat*(CvMat*, int, int, int, void*, int);
+using cvGetRawDataF = void(const CvArr*, uchar**, int* step, CvSize* roi_size);
 
 bool loadOpenCV() {
     static bool loaded = false;
@@ -52,6 +56,7 @@ FFTImpl::FFTImpl(const std::shared_ptr<ngraph::Node> &node) {
     inpShape = castedNode->get_input_shape(0);
     outShape = castedNode->get_output_shape(0);
     inverse = castedNode->inverse;
+    centered = castedNode->centered;
 }
 //! [cpu_implementation:ctor]
 
@@ -103,6 +108,55 @@ InferenceEngine::StatusCode FFTImpl::init(InferenceEngine::LayerConfig &config, 
 }
 //! [cpu_implementation:init]
 
+static void fftshift(CvMat* src) {
+    static auto cvCloneMat = reinterpret_cast<cvCloneMatF*>(so->get_symbol("cvCloneMat"));
+    static auto cvCopy = reinterpret_cast<cvCopyF*>(so->get_symbol("cvCopy"));
+    static auto cvInitMatHeader = reinterpret_cast<cvInitMatHeaderF*>(so->get_symbol("cvInitMatHeader"));
+    static auto cvGetRawData = reinterpret_cast<cvGetRawDataF*>(so->get_symbol("cvGetRawData"));
+    static auto cvReleaseMat = reinterpret_cast<cvReleaseMatF*>(so->get_symbol("cvReleaseMat"));
+
+
+    // tl | tr        br | bl
+    // ---+---   ->   ---+---
+    // bl | br        tr | tl
+
+    float* data;
+    int step;
+    CvSize size;
+    cvGetRawData(src, (uchar**)&data, &step, &size);
+
+    int height = size.height;
+    int width = size.width;
+    int h2 = height / 2;
+    int w2 = width / 2;
+
+    CvMat* tl = new CvMat();
+    CvMat* tr = new CvMat();
+    CvMat* bl = new CvMat();
+    CvMat* br = new CvMat();
+
+    cvInitMatHeader(tl, h2, w2, CV_32FC2, data, step);
+    cvInitMatHeader(tr, h2, w2, CV_32FC2, data + width, step);
+    cvInitMatHeader(bl, h2, w2, CV_32FC2, data + height * width, step);
+    cvInitMatHeader(br, h2, w2, CV_32FC2, data + height * width + width, step);
+
+    CvArr* mask = 0;
+    CvMat* tmp = cvCloneMat(tl);
+    cvCopy(br, tl, mask);
+    cvCopy(tmp, br, mask);
+
+    cvCopy(tr, tmp, mask);
+    cvCopy(bl, tr, mask);
+    cvCopy(tmp, bl, mask);
+
+    cvReleaseMat(&tmp);
+
+    delete tl;
+    delete tr;
+    delete bl;
+    delete br;
+}
+
 //! [cpu_implementation:execute]
 InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::Ptr> &inputs,
                                              std::vector<InferenceEngine::Blob::Ptr> &outputs,
@@ -128,11 +182,18 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             CvMat* out = cvCreateMatHeader(rows, cols, CV_32FC2);
             cvSetData(inp, reinterpret_cast<void*>(inpData + d * planeSize), cols * 2 * sizeof(float));
             cvSetData(out, reinterpret_cast<void*>(outData + d * planeSize), cols * 2 * sizeof(float));
+
+            if (centered)
+                fftshift(inp);
+
             if (inverse)
                 cvDFT(inp, out, CV_DXT_INVERSE, 0);
             else
                 cvDFT(inp, out, CV_DXT_FORWARD, 0);
             cvScale(out, out, 1.0 / sqrtf(cols * rows), 0);
+
+            if (centered)
+                fftshift(out);
 
             cvReleaseMat(&inp);
             cvReleaseMat(&out);

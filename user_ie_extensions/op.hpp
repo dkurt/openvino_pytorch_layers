@@ -30,12 +30,12 @@ public:
     const ngraph::NodeTypeInfo& get_type_info() const override { return type_info;  }
 
     FFTOp() = default;
-    FFTOp(const ngraph::Output<ngraph::Node>& inp, bool inverse);
+    FFTOp(const ngraph::Output<ngraph::Node>& inp, bool inverse, bool centered);
     void validate_and_infer_types() override;
     std::shared_ptr<ngraph::Node> clone_with_new_inputs(const ngraph::OutputVector& new_args) const override;
     bool visit_attributes(ngraph::AttributeVisitor& visitor) override;
 
-    bool inverse;
+    bool inverse, centered;
 };
 
 class IFFTOp : public FFTOp {
@@ -43,7 +43,7 @@ public:
     static constexpr ngraph::NodeTypeInfo type_info{"IFFT", 0};
 
     IFFTOp() = default;
-    IFFTOp(const ngraph::Output<ngraph::Node>& inp, bool inverse);
+    IFFTOp(const ngraph::Output<ngraph::Node>& inp, bool inverse, bool centered);
 };
 
 class GridSampleOp : public ngraph::op::Op {
