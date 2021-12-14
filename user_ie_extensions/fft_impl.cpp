@@ -165,7 +165,7 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
     static auto cvCreateMatHeader = reinterpret_cast<cvCreateMatHeaderF*>(so->get_symbol("cvCreateMatHeader"));
     static auto cvDFT = reinterpret_cast<cvDftF*>(so->get_symbol("cvDFT"));
     static auto cvScale = reinterpret_cast<cvScaleF*>(so->get_symbol("cvConvertScale"));
-    static auto cvReleaseMat = reinterpret_cast<cvReleaseMatF*>(so->get_symbol("cvReleaseMat"));    
+    static auto cvReleaseMat = reinterpret_cast<cvReleaseMatF*>(so->get_symbol("cvReleaseMat"));
 
     float* inpData = inputs[0]->buffer();
     float* outData = outputs[0]->buffer();
