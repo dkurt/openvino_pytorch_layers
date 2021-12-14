@@ -113,7 +113,7 @@ static void fftshift(CvMat* src) {
     static auto cvCopy = reinterpret_cast<cvCopyF*>(so->get_symbol("cvCopy"));
     static auto cvInitMatHeader = reinterpret_cast<cvInitMatHeaderF*>(so->get_symbol("cvInitMatHeader"));
     static auto cvGetRawData = reinterpret_cast<cvGetRawDataF*>(so->get_symbol("cvGetRawData"));
-    // static auto cvReleaseMat = reinterpret_cast<cvReleaseMatF*>(so->get_symbol("cvReleaseMat"));
+    static auto cvReleaseMat = reinterpret_cast<cvReleaseMatF*>(so->get_symbol("cvReleaseMat"));
 
 
     // tl | tr        br | bl
@@ -127,18 +127,18 @@ static void fftshift(CvMat* src) {
 
     int height = size.height;
     int width = size.width;
-    int h = height / 2;
-    int w = width / 2;
+    int h2 = height / 2;
+    int w2 = width / 2;
 
     CvMat* tl = new CvMat();
     CvMat* tr = new CvMat();
     CvMat* bl = new CvMat();
     CvMat* br = new CvMat();
 
-    cvInitMatHeader(tl, h, w, CV_32FC2, data, step);
-    cvInitMatHeader(tr, h, w, CV_32FC2, data + width, step);
-    cvInitMatHeader(bl, h, w, CV_32FC2, data + height * width, step);
-    cvInitMatHeader(br, h, w, CV_32FC2, data + height * width + width, step);
+    cvInitMatHeader(tl, h2, w2, CV_32FC2, data, step);
+    cvInitMatHeader(tr, h2, w2, CV_32FC2, data + width, step);
+    cvInitMatHeader(bl, h2, w2, CV_32FC2, data + height * width, step);
+    cvInitMatHeader(br, h2, w2, CV_32FC2, data + height * width + width, step);
 
     CvArr* mask = 0;
     CvMat* tmp = cvCloneMat(tl);
@@ -149,7 +149,12 @@ static void fftshift(CvMat* src) {
     cvCopy(bl, tr, mask);
     cvCopy(tmp, bl, mask);
 
-    // cvReleaseMat(&tl);
+    cvReleaseMat(&tmp);
+
+    delete tl;
+    delete tr;
+    delete bl;
+    delete br;
 }
 
 //! [cpu_implementation:execute]
@@ -160,12 +165,7 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
     static auto cvCreateMatHeader = reinterpret_cast<cvCreateMatHeaderF*>(so->get_symbol("cvCreateMatHeader"));
     static auto cvDFT = reinterpret_cast<cvDftF*>(so->get_symbol("cvDFT"));
     static auto cvScale = reinterpret_cast<cvScaleF*>(so->get_symbol("cvConvertScale"));
-    static auto cvReleaseMat = reinterpret_cast<cvReleaseMatF*>(so->get_symbol("cvReleaseMat"));
-
-    static auto cvCloneMat = reinterpret_cast<cvCloneMatF*>(so->get_symbol("cvCloneMat"));
-    static auto cvCopy = reinterpret_cast<cvCopyF*>(so->get_symbol("cvCopy"));
-    static auto cvInitMatHeader = reinterpret_cast<cvInitMatHeaderF*>(so->get_symbol("cvInitMatHeader"));
-    static auto cvGetRawData = reinterpret_cast<cvGetRawDataF*>(so->get_symbol("cvGetRawData"));
+    static auto cvReleaseMat = reinterpret_cast<cvReleaseMatF*>(so->get_symbol("cvReleaseMat"));    
 
     float* inpData = inputs[0]->buffer();
     float* outData = outputs[0]->buffer();
