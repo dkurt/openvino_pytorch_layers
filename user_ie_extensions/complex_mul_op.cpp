@@ -18,7 +18,7 @@ ComplexMulOp::ComplexMulOp(const ngraph::Output<ngraph::Node>& inp0,
 
 //! [op:validate]
 void ComplexMulOp::validate_and_infer_types() {
-    auto outShape = get_input_partial_shape(1);
+    auto outShape = get_input_partial_shape(0);
     set_output_type(0, get_input_element_type(1), outShape);
 }
 //! [op:validate]

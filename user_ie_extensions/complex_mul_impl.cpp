@@ -95,20 +95,20 @@ InferenceEngine::StatusCode ComplexMulImpl::execute(std::vector<InferenceEngine:
     size_t channels1 = inputs[1]->getTensorDesc().getDims()[1];
     size_t spatialSize = inputs[1]->getTensorDesc().getDims()[2] * inputs[1]->getTensorDesc().getDims()[3];
 
-    // std::cout << "Input0" << std::endl;
-    // for (int i = 0; i < 16; ++i)
-    //     std::cout << inp0[i] << " ";
-    std::cout << "Input1" << std::endl;
-    for (int i = 0; i < 8 * channels1; ++i)
-        std::cout << inp1[i] << " ";
+    // // std::cout << "Input0" << std::endl;
+    // // for (int i = 0; i < 16; ++i)
+    // //     std::cout << inp0[i] << " ";
+    // std::cout << "Input1" << std::endl;
+    // for (int i = 0; i < 8 * channels1; ++i)
+    //     std::cout << inp1[i] << " ";
+    // // std::cout << " " << std::endl;
     // std::cout << " " << std::endl;
-    std::cout << " " << std::endl;
-    std::cout << spatialSize << std::endl;
-    std::cout << channels0 << " " <<channels1 << std::endl;
+    // std::cout << spatialSize << std::endl;
+    // std::cout << channels0 << " " <<channels1 << std::endl;
 
    
-    // # x1 = x_r * csm_r - x_i * csm_i
-    // # x2 = x_r * csm_i + x_i * csm_r
+    // # x1 = x_r * y_r - x_i * y_i
+    // # x2 = x_r * y_i + x_i * y_r
     if (channels0 == channels1)
         InferenceEngine::parallel_for(channels0, [&](size_t ch) {
             for (int i = 0; i < spatialSize; ++i) {
@@ -134,12 +134,12 @@ InferenceEngine::StatusCode ComplexMulImpl::execute(std::vector<InferenceEngine:
                 }
             });
 
-        std::cout << " " << std::endl;
-        std::cout << "RES" << std::endl;
-        for (int i = 0; i < 16; ++i)
-            std::cout << out[i] << " ";
-        std::cout << " " << std::endl;
-        std::cout << " " << std::endl;
+        // std::cout << " " << std::endl;
+        // std::cout << "RES" << std::endl;
+        // for (int i = 0; i < 16; ++i)
+        //     std::cout << out[i] << " ";
+        // std::cout << " " << std::endl;
+        // std::cout << " " << std::endl;
 
 
     return InferenceEngine::OK;
