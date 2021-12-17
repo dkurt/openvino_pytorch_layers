@@ -58,6 +58,23 @@ public:
     std::shared_ptr<ngraph::Node> clone_with_new_inputs(const ngraph::OutputVector& new_args) const override;
     bool visit_attributes(ngraph::AttributeVisitor& visitor) override;
 };
+
+class ComplexMulOp : public ngraph::op::Op {
+public:
+    static constexpr ngraph::NodeTypeInfo type_info{"ComplexMultiplication", 0};
+    const ngraph::NodeTypeInfo& get_type_info() const override { return type_info;  }
+
+    ComplexMulOp() = default;
+    ComplexMulOp(const ngraph::Output<ngraph::Node>& inp0,
+                const ngraph::Output<ngraph::Node>& inp1,
+                bool is_conj);
+    void validate_and_infer_types() override;
+    std::shared_ptr<ngraph::Node> clone_with_new_inputs(const ngraph::OutputVector& new_args) const override;
+    bool visit_attributes(ngraph::AttributeVisitor& visitor) override;
+
+    bool is_conj;
+};
+
 //! [op:header]
 
 }  // namespace TemplateExtension
