@@ -94,26 +94,12 @@ InferenceEngine::StatusCode ComplexMulImpl::execute(std::vector<InferenceEngine:
     size_t channels0 = inputs[0]->getTensorDesc().getDims()[1];
     size_t channels1 = inputs[1]->getTensorDesc().getDims()[1];
     size_t batch = inputs[0]->getTensorDesc().getDims()[0];
-    size_t spatialSize = inputs[1]->getTensorDesc().getDims()[2] * inputs[1]->getTensorDesc().getDims()[3];
+    size_t spatialSize = inputs[0]->getTensorDesc().getDims()[2] * inputs[0]->getTensorDesc().getDims()[3];
 
-    
-
-    // std::cout << "Input0" << std::endl;
-    // for (int i = 0; i < 16; ++i)
-    //     std::cout << inp0[i] << " ";
-    // std::cout << "Input1" << std::endl;
-    // for (int i = 0; i < 8 * channels1; ++i)
-    //     std::cout << inp1[i] << " ";
-    // // std::cout << " " << std::endl;
-    std::cout << " " << std::endl;
-    // std::cout << spatialSize << std::endl;
-    std::cout << channels1 << std::endl;
-    std::cout <<  " " << std::endl;
-
-    // # x1 = x_r * y_r - x_i * y_i
-    // # x2 = x_r * y_i + x_i * y_r
-    if (channels0 == channels1){
-        InferenceEngine::parallel_for(channels0 * batch, [&](size_t ch) {
+    // x1 = x_r * y_r - x_i * y_i
+    // x2 = x_r * y_i + x_i * y_r
+    if (channels0 == channels1) {
+        InferenceEngine::parallel_for(channels0 * batch, [&](size_t ch)
             for (int i = 0; i < spatialSize; ++i) {
                     int outIdx = (ch * spatialSize + i) * 2;
                     float real0 = inp0[outIdx];
@@ -124,43 +110,24 @@ InferenceEngine::StatusCode ComplexMulImpl::execute(std::vector<InferenceEngine:
                     out[outIdx + 1] = real0 * imag1 + imag0 * real1;
             }
         });
-    }else if (channels1 < channels0) {
-        spatialSize *=batch;
-        for (int ch = 0; ch < channels0; ++ch){
+    else if (channels1 == 1)
+        InferenceEngine::parallel_for(batch, [&](size_t b) {
+            for (int ch = 0; ch < channels0; ++ch) {
                 for (int i = 0; i < spatialSize; ++i) {
-                    int outIdx = (ch * spatialSize + i) * 2;
-                    std::cout << outIdx << " "  << i * 2 << std::endl;
+                    int outIdx = (b * channels0 * spatialSize + ch * spatialSize + i) * 2;
+                    int inpIdx = (b * spatialSize + i) * 2;
                     float real0 = inp0[outIdx];
                     float imag0 = inp0[outIdx + 1];
-                    float real1 = inp1[i * 2];
-                    float imag1 = inp1[i * 2 + 1];
+                    float real1 = inp1[inpIdx];
+                    float imag1 = inp1[inpIdx + 1];
                     out[outIdx] = real0 * real1 - imag0 * imag1;
                     out[outIdx + 1] = real0 * imag1 + imag0 * real1;
                 }
-        }
-        }
-        std::cout <<  " " << std::endl;
-        // InferenceEngine::parallel_for(channels0, [&](size_t ch) {
-        //         for (int i = 0; i < tmp; ++i) {
-        //             int outIdx = (ch * spatialSize + i) * 2;
-        //             float real0 = inp0[outIdx];
-        //             float imag0 = inp0[outIdx + 1];
-        //             float real1 = inp1[i * 2];
-        //             float imag1 = inp1[i * 2 + 1];
-        //             out[outIdx] = real0 * real1 - imag0 * imag1;
-        //             out[outIdx + 1] = real0 * imag1 + imag0 * real1;
-        //         }
-        //     });
-
-        // std::cout << " " << std::endl;
-        std::cout << "RES" << std::endl;
-        for (int i = 0; i < 32; ++i)
-            std::cout << out[i] << " ";
-        std::cout << " " << std::endl;
-        std::cout << " " << std::endl;
-
+            }
+        });
+    else
+        THROW_IE_EXCEPTION << "Wrong number of channels for second input!";
 
     return InferenceEngine::OK;
 }
 //! [cpu_implementation:execute]
-

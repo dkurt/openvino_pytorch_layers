@@ -173,7 +173,6 @@ jobs:
         python3 examples/unpool/export_model.py --mode=dynamic_size --shape 4 3 17 8
         python3 compare.py
 
-
     - name: (Test FFT)
       run: |
         for shape in "5 120 2" "4 240 320 2" "3 5 240 320 2"; do
@@ -197,6 +196,13 @@ jobs:
         python3 -m mo --input_model model.onnx --extension mo_extensions
         python3 compare.py --num_inputs 2
 
+    - name: (Test ComplexMultiplication)
+      run: |
+        for shape in "3, 2, 4, 8, 2" "3, 1, 4, 8, 2"; do
+          python3 examples/complex_mul/export_model.py --other_shape ${shape}
+          python3 -m mo --input_model model.onnx --extension mo_extensions
+          python3 compare.py --num_inputs 2
+        done
 
   publish:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
