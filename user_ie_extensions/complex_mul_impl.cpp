@@ -98,8 +98,8 @@ InferenceEngine::StatusCode ComplexMulImpl::execute(std::vector<InferenceEngine:
 
     // x1 = x_r * y_r - x_i * y_i
     // x2 = x_r * y_i + x_i * y_r
-    if (channels0 == channels1) {
-        InferenceEngine::parallel_for(channels0 * batch, [&](size_t ch)
+    if (channels0 == channels1)
+        InferenceEngine::parallel_for(channels0 * batch, [&](size_t ch) {
             for (int i = 0; i < spatialSize; ++i) {
                     int outIdx = (ch * spatialSize + i) * 2;
                     float real0 = inp0[outIdx];
