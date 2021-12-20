@@ -5,13 +5,8 @@
 #include "op.hpp"
 #include <details/ie_exception.hpp>
 #include <ie_layouts.h>
-
-// #include <opencv2/opencv.hpp>
 #include <opencv2/core/hal/intrin.hpp>
-// #include "opencv_hal_intrin.hpp"
 #include "ie_parallel.hpp"
-
-// #include <opencv2/core/core_c.h>
 
 using namespace TemplateExtension;
 
