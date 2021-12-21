@@ -4,34 +4,42 @@ from mo.ops.op import Op
 
 
 class FFT(Op):
-    op = 'FFT'
+    op = "FFT"
     enabled = True
 
     def __init__(self, graph: Graph, attrs: dict):
-        super().__init__(graph, {
-            'type': __class__.op,
-            'op': __class__.op,
-            'in_ports_count': 1,
-            'out_ports_count': 1,
-            'infer': copy_shape_infer
-        }, attrs)
+        super().__init__(
+            graph,
+            {
+                "type": __class__.op,
+                "op": __class__.op,
+                "in_ports_count": 1,
+                "out_ports_count": 1,
+                "infer": copy_shape_infer,
+            },
+            attrs,
+        )
 
     def supported_attrs(self):
-        return ['inverse']
+        return ["inverse"]
 
 
 class IFFT(Op):
-    op = 'IFFT'
+    op = "IFFT"
     enabled = True
 
     def __init__(self, graph: Graph, attrs: dict):
-        super().__init__(graph, {
-            'type': __class__.op,
-            'op': __class__.op,
-            'in_ports_count': 1,
-            'out_ports_count': 1,
-            'infer': copy_shape_infer
-        }, attrs)
+        super().__init__(
+            graph,
+            {
+                "type": __class__.op,
+                "op": __class__.op,
+                "in_ports_count": 1,
+                "out_ports_count": 1,
+                "infer": copy_shape_infer,
+            },
+            attrs,
+        )
 
     def supported_attrs(self):
-        return ['inverse']
+        return ["inverse"]
