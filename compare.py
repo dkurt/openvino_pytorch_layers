@@ -7,6 +7,7 @@ import numpy as np
 
 parser = argparse.ArgumentParser(description='Compare OpenVINO implementation with reference data')
 parser.add_argument('--num_inputs', type=int, default=1)
+parser.add_argument('-m', '--model', default="model.xml")
 parser.add_argument('-d', '--device', default="CPU")
 args = parser.parse_args()
 
@@ -21,10 +22,16 @@ for i in range(args.num_inputs):
 ref = np.load('ref.npy')
 
 ie = IECore()
+try:
+    import io
+    buf = io.BytesIO()
+    ie.read_network(buf.getvalue(), b"", init_from_buffer=True)
+except:
+    pass
 ie.add_extension(get_extensions_path(), 'CPU')
 ie.set_config({'CONFIG_FILE': 'user_ie_extensions/gpu_extensions.xml'}, 'GPU')
 
-net = ie.read_network('model.xml', 'model.bin')
+net = ie.read_network(arg.model)
 net.reshape(shapes)
 exec_net = ie.load_network(net, args.device)
 

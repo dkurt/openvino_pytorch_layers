@@ -12,7 +12,7 @@ on:
 
 env:
   OPENVINO_VERSION: 2021.4.2
-  VERSION: 2021.4.2.2
+  VERSION: 2021.4.2.3
   DIST_VERSION: 2021.4.752
   DIST_WIN: https://registrationcenter-download.intel.com/akdlm/irc_nas/18320/w_openvino_toolkit_p_2021.4.752.exe
   DIST_MAC: https://registrationcenter-download.intel.com/akdlm/irc_nas/18317/m_openvino_toolkit_p_2021.4.752.dmg
@@ -52,6 +52,7 @@ jobs:
 
     - name: Build wheel
       run: |
+        source /opt/intel/openvino_2021/bin/setupvars.sh
         python3 -m pip install wheel
         EXT_LIB=user_ie_extensions/build/libuser_cpu_extension.so python3 setup.py build bdist_wheel
         mv dist/*.whl openvino_extensions-${{env.VERSION}}-py3-none-manylinux2014_x86_64.whl
@@ -84,6 +85,7 @@ jobs:
 
     - name: Build wheel
       run: |
+        call "C:\Program Files (x86)\Intel\openvino_2021\bin\setupvars.bat"
         python3 -m pip install wheel
         ls user_ie_extensions\build\Release
         set EXT_LIB=user_ie_extensions\\build\\Release\\user_cpu_extension.dll
@@ -119,6 +121,7 @@ jobs:
 
     - name: Build wheel
       run: |
+        source /opt/intel/openvino_2021/bin/setupvars.sh
         python3 -m pip install wheel
         ls user_ie_extensions/build/
         EXT_LIB=user_ie_extensions/build/libuser_cpu_extension.dylib python3 setup.py build bdist_wheel
@@ -163,15 +166,18 @@ jobs:
         python3 examples/unpool/export_model.py --mode=default
         python3 -m mo --input_model model.onnx --extension mo_extensions
         python3 compare.py
+        python3 compare.py -m model.onnx
 
     - name: (Test Unpool) Test dynamic shapes
       run: |
         python3 examples/unpool/export_model.py --mode=dynamic_size --shape 5 3 6 9
         python3 -m mo --input_model model.onnx --extension mo_extensions
         python3 compare.py
+        python3 compare.py -m model.onnx
 
         python3 examples/unpool/export_model.py --mode=dynamic_size --shape 4 3 17 8
         python3 compare.py
+        python3 compare.py -m model.onnx
 
     - name: (Test FFT)
       run: |
@@ -179,22 +185,26 @@ jobs:
           python3 examples/fft/export_model.py --shape ${shape}
           python3 -m mo --input_model model.onnx --extension mo_extensions
           python3 compare.py
+          python3 compare.py -m model.onnx
         done
 
         python3 examples/fft/export_model.py --shape 3 7 140 100 2
         python3 compare.py
+        python3 compare.py -m model.onnx
 
     - name: (Test FFT ROLL)
       run: |
         python3 examples/fft/export_model_with_roll.py
         python3 -m mo --input_model model.onnx --extension mo_extensions
         python3 compare.py
+        python3 compare.py -m model.onnx
 
     - name: (Test GridSample)
       run: |
         python3 examples/grid_sample/export_model.py
         python3 -m mo --input_model model.onnx --extension mo_extensions
         python3 compare.py --num_inputs 2
+        python3 compare.py --num_inputs 2 -m model.onnx
 
     - name: (Test ComplexMultiplication)
       run: |
@@ -202,6 +212,7 @@ jobs:
           python3 examples/complex_mul/export_model.py --other_shape ${shape}
           python3 -m mo --input_model model.onnx --extension mo_extensions
           python3 compare.py --num_inputs 2
+          python3 compare.py --num_inputs 2 -m model.onnx
         done
 
   publish:
