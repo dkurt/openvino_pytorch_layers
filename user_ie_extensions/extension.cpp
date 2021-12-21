@@ -34,6 +34,7 @@ std::map<std::string, ngraph::OpSet> Extension::getOpSets() {
     opset.insert<UnpoolOp>();
     opset.insert<FFTOp>();
     opset.insert<IFFTOp>();
+    opset.insert<ComplexMulOp>();
     opset.insert<GridSampleOp>();
     opsets["extension"] = opset;
     return opsets;
@@ -43,6 +44,7 @@ std::map<std::string, ngraph::OpSet> Extension::getOpSets() {
 //! [extension:getImplTypes]
 std::vector<std::string> Extension::getImplTypes(const std::shared_ptr<ngraph::Node> &node) {
     if (std::dynamic_pointer_cast<UnpoolOp>(node) ||
+        std::dynamic_pointer_cast<ComplexMulOp>(node) ||
         std::dynamic_pointer_cast<GridSampleOp>(node) ||
         std::dynamic_pointer_cast<IFFTOp>(node) ||
         std::dynamic_pointer_cast<FFTOp>(node)) {
@@ -62,6 +64,9 @@ InferenceEngine::ILayerImpl::Ptr Extension::getImplementation(const std::shared_
     }
     if (std::dynamic_pointer_cast<GridSampleOp>(node) && implType == "CPU") {
         return std::make_shared<GridSampleImpl>(node);
+    }
+    if (std::dynamic_pointer_cast<ComplexMulOp>(node) && implType == "CPU") {
+        return std::make_shared<ComplexMulImpl>(node);
     }
     return nullptr;
 }
