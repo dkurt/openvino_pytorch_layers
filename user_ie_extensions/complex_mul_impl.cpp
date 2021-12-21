@@ -106,18 +106,17 @@ InferenceEngine::StatusCode ComplexMulImpl::execute(std::vector<InferenceEngine:
             }
         });
     else if (channels1 == 1)
-        InferenceEngine::parallel_for(batch, [&](size_t b) {
-            for (int ch = 0; ch < channels0; ++ch) {
-                for (int i = 0; i < spatialSize; ++i) {
-                    int outIdx = (b * channels0 * spatialSize + ch * spatialSize + i) * 2;
-                    int inpIdx = (b * spatialSize + i) * 2;
-                    float real0 = inp0[outIdx];
-                    float imag0 = inp0[outIdx + 1];
-                    float real1 = inp1[inpIdx];
-                    float imag1 = inp1[inpIdx + 1];
-                    out[outIdx] = real0 * real1 - imag0 * imag1;
-                    out[outIdx + 1] = real0 * imag1 + imag0 * real1;
-                }
+        InferenceEngine::parallel_for(channels0 * batch, [&](size_t ch) {
+            int b = ch / channels0;
+            for (int i = 0; i < spatialSize; ++i) {
+                int outIdx = (ch * spatialSize + i) * 2;
+                int inpIdx = (b * spatialSize + i) * 2;
+                float real0 = inp0[outIdx];
+                float imag0 = inp0[outIdx + 1];
+                float real1 = inp1[inpIdx];
+                float imag1 = inp1[inpIdx + 1];
+                out[outIdx] = real0 * real1 - imag0 * imag1;
+                out[outIdx + 1] = real0 * imag1 + imag0 * real1;
             }
         });
     else
