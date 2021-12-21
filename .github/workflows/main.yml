@@ -52,7 +52,6 @@ jobs:
 
     - name: Build wheel
       run: |
-        source /opt/intel/openvino_2021/bin/setupvars.sh
         python3 -m pip install wheel
         EXT_LIB=user_ie_extensions/build/libuser_cpu_extension.so python3 setup.py build bdist_wheel
         mv dist/*.whl openvino_extensions-${{env.VERSION}}-py3-none-manylinux2014_x86_64.whl
@@ -85,7 +84,6 @@ jobs:
 
     - name: Build wheel
       run: |
-        call "C:\Program Files (x86)\Intel\openvino_2021\bin\setupvars.bat"
         python3 -m pip install wheel
         ls user_ie_extensions\build\Release
         set EXT_LIB=user_ie_extensions\\build\\Release\\user_cpu_extension.dll
@@ -121,7 +119,6 @@ jobs:
 
     - name: Build wheel
       run: |
-        source /opt/intel/openvino_2021/bin/setupvars.sh
         python3 -m pip install wheel
         ls user_ie_extensions/build/
         EXT_LIB=user_ie_extensions/build/libuser_cpu_extension.dylib python3 setup.py build bdist_wheel

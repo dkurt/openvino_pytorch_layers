@@ -10,3 +10,14 @@ def get_extensions_path():
     else:
         lib_name = 'lib' + lib_name + '.dylib'
     return os.path.join(os.path.dirname(__file__), lib_name)
+
+
+# This is a dummy procedure which instantiates onnx_importer library preloading
+try:
+    import io
+    from openvino.inference_engine import IECore
+    ie = IECore()
+    buf = io.BytesIO()
+    ie.read_network(buf.getvalue(), b"", init_from_buffer=True)
+except Exception:
+    pass
