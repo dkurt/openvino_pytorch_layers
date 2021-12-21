@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 set(TARGET_NAME "user_cpu_extension")
 
-find_package(ngraph REQUIRED)
+find_package(ngraph REQUIRED COMPONENTS onnx_importer)
 find_package(InferenceEngine REQUIRED)
 find_package(TBB REQUIRED tbb tbbmalloc)
 find_package(OpenCV QUIET COMPONENTS core)
@@ -25,6 +25,7 @@ endif()
 
 target_link_libraries(${TARGET_NAME} PRIVATE IE::inference_engine
                                              ${NGRAPH_LIBRARIES}
+                                             ${ONNX_IMPORTER_LIBRARIES}
                                              ${TBB_IMPORTED_TARGETS}
                                            )
 # [cmake:extension]
