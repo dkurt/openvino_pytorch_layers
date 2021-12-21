@@ -8,8 +8,5 @@ class ComplexMultiplicationExtractor(FrontExtractorOp):
 
     @classmethod
     def extract(cls, node):
-        attrs = {
-            'is_conj': onnx_attr(node, 'is_conj', 'i'),
-        }
-        ComplexMultiplication.update_node_stat(node, attrs)
+        ComplexMultiplication.update_node_stat(node)
         return cls.enabled

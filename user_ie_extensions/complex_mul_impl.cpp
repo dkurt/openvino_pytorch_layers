@@ -24,7 +24,6 @@ ComplexMulImpl::ComplexMulImpl(const std::shared_ptr<ngraph::Node> &node) {
     inpShapes.push_back(castedNode->get_input_shape(0));
     inpShapes.push_back(castedNode->get_input_shape(1));
     outShape = castedNode->get_output_shape(0);
-    is_conj = castedNode->is_conj;
 }
 //! [cpu_implementation:ctor]
 

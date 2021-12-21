@@ -9,10 +9,8 @@ constexpr ngraph::NodeTypeInfo ComplexMulOp::type_info;
 
 //! [op:ctor]
 ComplexMulOp::ComplexMulOp(const ngraph::Output<ngraph::Node>& inp0,
-                         const ngraph::Output<ngraph::Node>& inp1,
-                         bool _is_conj) : Op({inp0, inp1}) {
+                         const ngraph::Output<ngraph::Node>& inp1) : Op({inp0, inp1}) {
     constructor_validate_and_infer_types();
-    is_conj = _is_conj;
 }
 //! [op:ctor]
 
@@ -28,13 +26,12 @@ std::shared_ptr<ngraph::Node> ComplexMulOp::clone_with_new_inputs(const ngraph::
     if (new_args.size() != 2) {
         throw ngraph::ngraph_error("Incorrect number of new arguments");
     }
-    return std::make_shared<ComplexMulOp>(new_args.at(0), new_args.at(1), is_conj);
+    return std::make_shared<ComplexMulOp>(new_args.at(0), new_args.at(1));
 }
 //! [op:copy]
 
 //! [op:visit_attributes]
 bool ComplexMulOp::visit_attributes(ngraph::AttributeVisitor &visitor) {
-    visitor.on_attribute("is_conj", is_conj);
     return true;
 }
 //! [op:visit_attributes]

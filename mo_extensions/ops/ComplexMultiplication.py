@@ -21,6 +21,3 @@ class ComplexMultiplication(Op):
             },
             attrs,
         )
-
-    def supported_attrs(self):
-        return ["is_conj"]

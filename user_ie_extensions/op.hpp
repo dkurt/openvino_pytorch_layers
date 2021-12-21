@@ -66,13 +66,10 @@ public:
 
     ComplexMulOp() = default;
     ComplexMulOp(const ngraph::Output<ngraph::Node>& inp0,
-                const ngraph::Output<ngraph::Node>& inp1,
-                bool is_conj);
+                const ngraph::Output<ngraph::Node>& inp1);
     void validate_and_infer_types() override;
     std::shared_ptr<ngraph::Node> clone_with_new_inputs(const ngraph::OutputVector& new_args) const override;
     bool visit_attributes(ngraph::AttributeVisitor& visitor) override;
-
-    bool is_conj;
 };
 
 //! [op:header]
