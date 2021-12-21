@@ -17,39 +17,33 @@
 using namespace TemplateExtension;
 
 Extension::Extension() {
-    ngraph::onnx_import::register_operator(UnpoolOp::type_info.name, 1, "extension", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
-        ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
-        return {std::make_shared<UnpoolOp>(ng_inputs.at(0), ng_inputs.at(1),
-                                           ng_inputs.at(2), ng_inputs.at(3))};
-    });
-    ngraph::onnx_import::register_operator(FFTOp::type_info.name, 1, "extension", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
+    ngraph::onnx_import::register_operator(FFTOp::type_info.name, 1, "", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
         ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
         bool inverse = node.get_attribute_value<int64_t>("inverse");
         bool centered = node.get_attribute_value<int64_t>("centered");
         return {std::make_shared<FFTOp>(ng_inputs.at(0), inverse, centered)};
     });
-    ngraph::onnx_import::register_operator(IFFTOp::type_info.name, 1, "extension", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
+    ngraph::onnx_import::register_operator(IFFTOp::type_info.name, 1, "", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
         ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
         bool inverse = node.get_attribute_value<int64_t>("inverse");
         bool centered = node.get_attribute_value<int64_t>("centered");
         return {std::make_shared<IFFTOp>(ng_inputs.at(0), inverse, centered)};
     });
-    ngraph::onnx_import::register_operator(ComplexMulOp::type_info.name, 1, "extension", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
+    ngraph::onnx_import::register_operator(ComplexMulOp::type_info.name, 1, "", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
         ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
         return {std::make_shared<ComplexMulOp>(ng_inputs.at(0), ng_inputs.at(1))};
     });
-    ngraph::onnx_import::register_operator(GridSampleOp::type_info.name, 1, "extension", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
+    ngraph::onnx_import::register_operator(GridSampleOp::type_info.name, 1, "", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
         ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
         return {std::make_shared<GridSampleOp>(ng_inputs.at(0), ng_inputs.at(1))};
     });
 }
 
 Extension::~Extension() {
-    ngraph::onnx_import::unregister_operator(UnpoolOp::type_info.name, 1, "extension");
-    ngraph::onnx_import::unregister_operator(FFTOp::type_info.name, 1, "extension");
-    ngraph::onnx_import::unregister_operator(IFFTOp::type_info.name, 1, "extension");
-    ngraph::onnx_import::unregister_operator(ComplexMulOp::type_info.name, 1, "extension");
-    ngraph::onnx_import::unregister_operator(GridSampleOp::type_info.name, 1, "extension");
+    ngraph::onnx_import::unregister_operator(FFTOp::type_info.name, 1, "");
+    ngraph::onnx_import::unregister_operator(IFFTOp::type_info.name, 1, "");
+    ngraph::onnx_import::unregister_operator(ComplexMulOp::type_info.name, 1, "");
+    ngraph::onnx_import::unregister_operator(GridSampleOp::type_info.name, 1, "");
 }
 
 //! [extension:GetVersion]
