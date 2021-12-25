@@ -1,4 +1,5 @@
 import torch
+from packaging import version
 from typing import List, Tuple, Union
 
 def roll(
@@ -56,10 +57,14 @@ class FFT(torch.autograd.Function):
         if centered:
                 x = ifftshift(x)
 
-        if inverse:
-            y = torch.ifft(input=x, signal_ndim=signal_ndim, normalized=True)
+        if version.parse(torch.__version__) >= version.parse("1.8.0"):
+            func = torch.fft.ifftn if inverse else torch.fft.fftn
+            x = torch.view_as_complex(x)
+            y = func(x, dim=list(range(1, signal_ndim + 1)), norm="ortho")
+            y = torch.view_as_real(y)
         else:
-            y = torch.fft(input=x, signal_ndim=signal_ndim, normalized=True)
+            func = torch.ifft if inverse else torch.fft
+            y = func(input=x, signal_ndim=signal_ndim, normalized=True)
 
         if centered:
             y = fftshift(y)
