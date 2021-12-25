@@ -133,7 +133,7 @@ jobs:
 
   test_lnx:
     needs: build_lnx
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         torch-version: [1.7.0, 1.10.0]
