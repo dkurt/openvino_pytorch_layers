@@ -84,6 +84,7 @@ jobs:
 
     - name: Build wheel
       run: |
+        python3 -m pip install --upgrade pip
         python3 -m pip install wheel
         ls user_ie_extensions\build\Release
         set EXT_LIB=user_ie_extensions\\build\\Release\\user_cpu_extension.dll
@@ -119,6 +120,7 @@ jobs:
 
     - name: Build wheel
       run: |
+        python3 -m pip install --upgrade pip
         python3 -m pip install wheel
         ls user_ie_extensions/build/
         EXT_LIB=user_ie_extensions/build/libuser_cpu_extension.dylib python3 setup.py build bdist_wheel
@@ -130,12 +132,11 @@ jobs:
         path: "*.whl"
 
   test_lnx:
+    needs: build_lnx
+    runs-on: ubuntu-18.04
     strategy:
       matrix:
-        lnx_os: [ubuntu-18.04]
-
-    needs: build_lnx
-    runs-on: ${{ matrix.lnx_os }}
+        torch-version: [1.7.0, 1.10.0]
 
     steps:
     - uses: actions/checkout@v2
@@ -148,9 +149,9 @@ jobs:
       run: |
         sudo apt-get install -y python3-setuptools libopencv-dev
         python3 -m pip install --upgrade pip
-        python3 -m pip install -r requirements.txt
+        python3 -m pip install torch==${{ matrix.torch-version }}
         python3 -m pip install -U protobuf
-        python3 -m pip install openvino-dev==${{env.OPENVINO_VERSION}}
+        python3 -m pip install openvino-dev[onnx]==${{env.OPENVINO_VERSION}}
 
     # Also, remove "openvino_extensions" folder to avoid import confusion
     - name: Install CPU extensions
@@ -158,56 +159,9 @@ jobs:
         rm -r openvino_extensions
         python3 -m pip install *.whl
 
-    - name: (Test Unpool) default parameters
+    - name: Test
       run: |
-        python3 examples/unpool/export_model.py --mode=default
-        python3 -m mo --input_model model.onnx --extension mo_extensions
-        python3 compare.py
-
-    - name: (Test Unpool) Test dynamic shapes
-      run: |
-        python3 examples/unpool/export_model.py --mode=dynamic_size --shape 5 3 6 9
-        python3 -m mo --input_model model.onnx --extension mo_extensions
-        python3 compare.py
-
-        python3 examples/unpool/export_model.py --mode=dynamic_size --shape 4 3 17 8
-        python3 compare.py
-
-    - name: (Test FFT)
-      run: |
-        for shape in "5 120 2" "4 240 320 2" "3 5 240 320 2"; do
-          python3 examples/fft/export_model.py --shape ${shape}
-          python3 -m mo --input_model model.onnx --extension mo_extensions
-          python3 compare.py
-          python3 compare.py -m model.onnx
-        done
-
-        python3 examples/fft/export_model.py --shape 3 7 140 100 2
-        python3 compare.py
-        python3 compare.py -m model.onnx
-
-    - name: (Test FFT ROLL)
-      run: |
-        python3 examples/fft/export_model_with_roll.py
-        python3 -m mo --input_model model.onnx --extension mo_extensions
-        python3 compare.py
-        python3 compare.py -m model.onnx
-
-    - name: (Test GridSample)
-      run: |
-        python3 examples/grid_sample/export_model.py
-        python3 -m mo --input_model model.onnx --extension mo_extensions
-        python3 compare.py --num_inputs 2
-        python3 compare.py --num_inputs 2 -m model.onnx
-
-    - name: (Test ComplexMultiplication)
-      run: |
-        for shape in "3 2 4 8 2" "3 1 4 8 2"; do
-          python3 examples/complex_mul/export_model.py --other_shape ${shape}
-          python3 -m mo --input_model model.onnx --extension mo_extensions
-          python3 compare.py --num_inputs 2
-          python3 compare.py --num_inputs 2 -m model.onnx
-        done
+        python3 -m unittest run_tests.py
 
   publish:
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
