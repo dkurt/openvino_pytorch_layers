@@ -37,6 +37,18 @@ Extension::Extension() {
         ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
         return {std::make_shared<GridSampleOp>(ng_inputs.at(0), ng_inputs.at(1))};
     });
+    ngraph::onnx_import::register_operator(SparseConvOp::type_info.name, 1, "org.open3d", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
+        ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
+        return {std::make_shared<SparseConvOp>(ng_inputs.at(0), ng_inputs.at(1), ng_inputs.at(2), ng_inputs.at(3))};
+    });
+    ngraph::onnx_import::register_operator(SparseConvTransposeOp::type_info.name, 1, "org.open3d", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
+        ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
+        return {std::make_shared<SparseConvTransposeOp>(ng_inputs.at(0), ng_inputs.at(1), ng_inputs.at(2), ng_inputs.at(3))};
+    });
+    ngraph::onnx_import::register_operator(CalculateGridOp::type_info.name, 1, "org.open3d", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
+        ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
+        return {std::make_shared<CalculateGridOp>(ng_inputs.at(0))};
+    });
 }
 
 Extension::~Extension() {
@@ -44,6 +56,9 @@ Extension::~Extension() {
     ngraph::onnx_import::unregister_operator(IFFTOp::type_info.name, 1, "");
     ngraph::onnx_import::unregister_operator(ComplexMulOp::type_info.name, 1, "");
     ngraph::onnx_import::unregister_operator(GridSampleOp::type_info.name, 1, "");
+    ngraph::onnx_import::unregister_operator(SparseConvOp::type_info.name, 1, "org.open3d");
+    ngraph::onnx_import::unregister_operator(SparseConvTransposeOp::type_info.name, 1, "org.open3d");
+    ngraph::onnx_import::unregister_operator(CalculateGridOp::type_info.name, 1, "org.open3d");
 }
 
 //! [extension:GetVersion]
@@ -67,6 +82,9 @@ std::map<std::string, ngraph::OpSet> Extension::getOpSets() {
     opset.insert<IFFTOp>();
     opset.insert<ComplexMulOp>();
     opset.insert<GridSampleOp>();
+    opset.insert<SparseConvOp>();
+    opset.insert<SparseConvTransposeOp>();
+    opset.insert<CalculateGridOp>();
     opsets["extension"] = opset;
     return opsets;
 }
@@ -77,6 +95,9 @@ std::vector<std::string> Extension::getImplTypes(const std::shared_ptr<ngraph::N
     if (std::dynamic_pointer_cast<UnpoolOp>(node) ||
         std::dynamic_pointer_cast<ComplexMulOp>(node) ||
         std::dynamic_pointer_cast<GridSampleOp>(node) ||
+        std::dynamic_pointer_cast<SparseConvOp>(node) ||
+        std::dynamic_pointer_cast<SparseConvTransposeOp>(node) ||
+        std::dynamic_pointer_cast<CalculateGridOp>(node) ||
         std::dynamic_pointer_cast<IFFTOp>(node) ||
         std::dynamic_pointer_cast<FFTOp>(node)) {
         return {"CPU"};
@@ -98,6 +119,15 @@ InferenceEngine::ILayerImpl::Ptr Extension::getImplementation(const std::shared_
     }
     if (std::dynamic_pointer_cast<ComplexMulOp>(node) && implType == "CPU") {
         return std::make_shared<ComplexMulImpl>(node);
+    }
+    if (std::dynamic_pointer_cast<SparseConvOp>(node) && implType == "CPU") {
+        return std::make_shared<SparseConvImpl>(node);
+    }
+    if (std::dynamic_pointer_cast<SparseConvTransposeOp>(node) && implType == "CPU") {
+        return std::make_shared<SparseConvTransposeImpl>(node);
+    }
+    if (std::dynamic_pointer_cast<CalculateGridOp>(node) && implType == "CPU") {
+        return std::make_shared<CalculateGridImpl>(node);
     }
     return nullptr;
 }
