@@ -21,13 +21,15 @@ Extension::Extension() {
         ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
         bool inverse = node.get_attribute_value<int64_t>("inverse");
         bool centered = node.get_attribute_value<int64_t>("centered");
-        return {std::make_shared<FFTOp>(ng_inputs.at(0), inverse, centered)};
+        const auto dim = node.get_attribute_value<std::vector<int64_t>>("dim", {2, 3});
+        return {std::make_shared<FFTOp>(ng_inputs.at(0), inverse, centered, dim)};
     });
     ngraph::onnx_import::register_operator(IFFTOp::type_info.name, 1, "", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
         ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
         bool inverse = node.get_attribute_value<int64_t>("inverse");
         bool centered = node.get_attribute_value<int64_t>("centered");
-        return {std::make_shared<IFFTOp>(ng_inputs.at(0), inverse, centered)};
+        const auto dim = node.get_attribute_value<std::vector<int64_t>>("dim", {2, 3});
+        return {std::make_shared<IFFTOp>(ng_inputs.at(0), inverse, centered, dim)};
     });
     ngraph::onnx_import::register_operator(ComplexMulOp::type_info.name, 1, "", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
         ngraph::OutputVector ng_inputs {node.get_ng_inputs()};

@@ -57,6 +57,7 @@ FFTImpl::FFTImpl(const std::shared_ptr<ngraph::Node> &node) {
     outShape = castedNode->get_output_shape(0);
     inverse = castedNode->inverse;
     centered = castedNode->centered;
+    dim = castedNode->dim;
 }
 //! [cpu_implementation:ctor]
 
@@ -116,6 +117,7 @@ static void fftshift(CvMat* src) {
     static auto cvReleaseMat = reinterpret_cast<cvReleaseMatF*>(so->get_symbol("cvReleaseMat"));
 
 
+    // for dim = (2, 3):
     // tl | tr        br | bl
     // ---+---   ->   ---+---
     // bl | br        tr | tl
@@ -170,6 +172,10 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
     float* inpData = inputs[0]->buffer();
     float* outData = outputs[0]->buffer();
     std::vector<size_t> dims = inputs[0]->getTensorDesc().getDims();
+
+    for(int i = 0; i < 2; ++i)
+        std::cout << dim[i] << " ";
+    std::cout << std::endl;
 
     if (dims.size() == 5) {
         const int batch = dims[0];
