@@ -41,6 +41,7 @@ private:
     ngraph::Shape inpShape;
     ngraph::Shape outShape;
     bool inverse, centered;
+    std::vector<int64_t> dim;
     std::string error;
 };
 
