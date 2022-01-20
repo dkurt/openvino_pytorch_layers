@@ -95,5 +95,12 @@ class TestLayers(unittest.TestCase):
             self.run_test(num_inputs=2, test_onnx=True)
 
 
+    def test_deformable_conv(self):
+        from examples.deformable_conv.export_model import export
+        export()
+        self.run_test()
+        self.run_test(test_onnx=True)
+
+
 if __name__ == '__main__':
     unittest.main()
