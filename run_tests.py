@@ -102,6 +102,11 @@ class TestLayers(unittest.TestCase):
         export(
             inplanes=15,
             outplanes=15,
+            kernel_size=3,
+            stride=1,
+            padding=1,
+            dilation=1,
+            deformable_groups=1,
             inp_shape=[1, 15, 128, 240],
             offset_shape=[1, 18, 128, 240],
         )

@@ -38,11 +38,29 @@ class MyModel(nn.Module):
         return y
 
 
-def export(inplanes, outplanes, inp_shape, offset_shape):
+def export(
+    inplanes,
+    outplanes,
+    kernel_size,
+    stride,
+    padding,
+    dilation,
+    deformable_groups,
+    inp_shape,
+    offset_shape,
+):
     np.random.seed(324)
     torch.manual_seed(32)
 
-    model = MyModel(inplanes, outplanes)
+    model = MyModel(
+        inplanes,
+        outplanes,
+        kernel_size=kernel_size,
+        stride=stride,
+        padding=padding,
+        dilation=dilation,
+        deformable_groups=deformable_groups,
+    )
     model.eval()
 
     x = Variable(torch.randn(inp_shape))
@@ -73,6 +91,21 @@ if __name__ == "__main__":
     )
     parser.add_argument("--inplanes", type=int, nargs="+", default=15)
     parser.add_argument("--outplanes", type=int, nargs="+", default=15)
+    parser.add_argument("--kernel_size", type=int, nargs="+", default=3)
+    parser.add_argument("--stride", type=int, nargs="+", default=1)
+    parser.add_argument("--padding", type=int, nargs="+", default=1)
+    parser.add_argument("--dilation", type=int, nargs="+", default=1)
+    parser.add_argument("--deformable_groups", type=int, nargs="+", default=1)
     args = parser.parse_args()
 
-    export(args.inplanes, args.outplanes, args.inp_shape, args.offset_shape)
+    export(
+        args.inplanes,
+        args.outplanes,
+        args.kernel_size,
+        args.stride,
+        args.padding,
+        args.dilation,
+        args.deformable_groups,
+        args.inp_shape,
+        args.offset_shape,
+    )
