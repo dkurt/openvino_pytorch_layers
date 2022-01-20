@@ -38,9 +38,7 @@ class MyModel(nn.Module):
         return y
 
 
-def export(
-    inplanes=15, outplanes=15, inp_shape=[4, 3, 10, 10], offset_shape=[4, 18, 8, 8]
-):
+def export(inplanes, outplanes, inp_shape, offset_shape):
     np.random.seed(324)
     torch.manual_seed(32)
 
@@ -65,18 +63,6 @@ def export(
             operator_export_type=torch.onnx.OperatorExportTypes.ONNX_FALLTHROUGH,
             opset_version=12,
         )
-
-    # from openvino.inference_engine import IECore
-    # ie = IECore()
-    # net = ie.read_network('model.onnx')
-    # exec_net = ie.load_network(net, 'CPU')
-
-    # inputs = {'input':x, 'input1':offset}
-    # out = exec_net.infer(inputs)
-    # out = next(iter(out.values()))
-
-    # diff = np.max(np.abs(ref.detach().numpy() - out))
-    # print(diff)
 
 
 if __name__ == "__main__":
