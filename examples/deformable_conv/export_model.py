@@ -3,7 +3,7 @@ import argparse
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
-from deformable_conv import DeformableConvolution
+from .deformable_conv import DeformableConvolution
 
 np.random.seed(324)
 torch.manual_seed(32)
