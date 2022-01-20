@@ -41,6 +41,9 @@ class DeformableConvolution(ops.DeformConv2d):
         self.pad_l = nn.ConstantPad2d((1, 1, 1, 1), 0)
 
     def forward(self, x, offset):
+        """
+        Using paddings is a workaround for 2021.4 release.
+        """
         x = self.pad_l(x)
         offset = self.pad_l(offset)
         y = DeformableConvFunc.apply(self, x, offset)
