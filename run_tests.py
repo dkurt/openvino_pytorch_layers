@@ -105,8 +105,8 @@ class TestLayers(unittest.TestCase):
             inp_shape=[1, 15, 128, 240],
             offset_shape=[1, 18, 128, 240],
         )
-        self.run_test(num_inputs=2)
-        self.run_test(num_inputs=2, test_onnx=True)
+        self.run_test(num_inputs=2, threshold=2e-5)
+        self.run_test(num_inputs=2, test_onnx=True, threshold=2e-5)
 
 
 if __name__ == "__main__":
