@@ -19,7 +19,7 @@ class MyModel(nn.Module):
         return y
 
 
-def export(shape):
+def export(shape, signal_ndim):
     np.random.seed(324)
     torch.manual_seed(32)
 

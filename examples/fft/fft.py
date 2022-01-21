@@ -51,9 +51,10 @@ class FFT(torch.autograd.Function):
                     inverse_i=inverse, centered_i=centered)
 
     @staticmethod
-    def forward(self, x, inverse, centered=False):
+    def forward(self, x, inverse, centered=False, signal_ndim=None):
         # https://pytorch.org/docs/stable/torch.html#torch.fft
-        signal_ndim = 2 if len(x.shape) == 5 else 1
+        if signal_ndim is None:
+            signal_ndim = 2 if len(x.shape) == 5 else 1
         if centered:
                 x = ifftshift(x)
 
