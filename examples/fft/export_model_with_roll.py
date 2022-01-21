@@ -7,22 +7,23 @@ from .fft import FFT
 
 
 class MyModel(nn.Module):
-    def __init__(self):
+    def __init__(self, signal_ndim):
         super(MyModel, self).__init__()
         self.fft = FFT()
+        self.signal_ndim = signal_ndim
 
     def forward(self, x):
-        y = self.fft.apply(x, False, True)
+        y = self.fft.apply(x, False, self.signal_ndim, True)
         y = y * 2
         # TODO: there is a bug with "inverse" data attribute in OpenVINO 2021.4
-        y = self.fft.apply(y, True, True)
+        y = self.fft.apply(y, True, self.signal_ndim, True)
         return y
 
-def export(shape=[5, 3, 6, 8, 2]):
+def export(shape, signal_ndim):
     np.random.seed(324)
     torch.manual_seed(32)
 
-    model = MyModel()
+    model = MyModel(signal_ndim)
     inp = Variable(torch.randn(shape))
     model.eval()
 

@@ -38,10 +38,9 @@ public:
                                         std::vector<InferenceEngine::Blob::Ptr> &outputs,
                                         InferenceEngine::ResponseDesc *resp) noexcept override;
 private:
-    ngraph::Shape inpShape;
+    std::vector<ngraph::Shape> inShapes;
     ngraph::Shape outShape;
     bool inverse, centered;
-    std::vector<int64_t> dim;
     std::string error;
 };
 

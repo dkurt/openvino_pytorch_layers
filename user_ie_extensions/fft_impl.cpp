@@ -47,37 +47,44 @@ FFTImpl::FFTImpl(const std::shared_ptr<ngraph::Node> &node) {
     auto castedNode = std::dynamic_pointer_cast<FFTOp>(node);
     if (!castedNode)
         THROW_IE_EXCEPTION << "Cannot create implementation for unknown operation!";
-    if (castedNode->inputs().size() != 1 || castedNode->outputs().size() != 1)
+    if (castedNode->inputs().size() != 2 || castedNode->outputs().size() != 1)
         THROW_IE_EXCEPTION << "Cannot create implementation for operation with incorrect number of inputs or outputs!";
     if (castedNode->get_input_partial_shape(0).is_dynamic() || castedNode->get_output_partial_shape(0).is_dynamic())
         THROW_IE_EXCEPTION << "Cannot create implementation for op with dynamic shapes!";
     if (castedNode->get_input_element_type(0) != ngraph::element::f32 || castedNode->get_output_element_type(0) != ngraph::element::f32)
         THROW_IE_EXCEPTION << "Operation supports only FP32 tensors.";
-    inpShape = castedNode->get_input_shape(0);
+    inShapes.resize(2);
+    for (int i = 0; i < 2; ++i)
+        inShapes[i] = castedNode->get_input_shape(i);
     outShape = castedNode->get_output_shape(0);
     inverse = castedNode->inverse;
     centered = castedNode->centered;
-    dim = castedNode->dim;
 }
 //! [cpu_implementation:ctor]
 
 //! [cpu_implementation:getSupportedConfigurations]
 InferenceEngine::StatusCode FFTImpl::getSupportedConfigurations(std::vector<InferenceEngine::LayerConfig> &conf,
-                                                                         InferenceEngine::ResponseDesc *resp) noexcept {
+                                                                InferenceEngine::ResponseDesc *resp) noexcept {
     std::vector<InferenceEngine::DataConfig> inDataConfig;
     std::vector<InferenceEngine::DataConfig> outDataConfig;
-    InferenceEngine::SizeVector order(inpShape.size());
-    std::iota(order.begin(), order.end(), 0);
-
     // Allow any offset before data
     size_t offset((std::numeric_limits<size_t>::max)());
 
     // Input shape
-    InferenceEngine::DataConfig inpConf;
-    inpConf.desc = InferenceEngine::TensorDesc(InferenceEngine::Precision::FP32, inpShape, {inpShape, order, offset});
-    inDataConfig.push_back(inpConf);
+    for (const auto& shape : inShapes)
+    {
+        InferenceEngine::SizeVector order(shape.size());
+        std::iota(order.begin(), order.end(), 0);
+
+        InferenceEngine::DataConfig inpConf;
+        inpConf.desc = InferenceEngine::TensorDesc(InferenceEngine::Precision::FP32, shape, {shape, order, offset});
+        inDataConfig.push_back(inpConf);
+    }
 
     // Output shape
+    InferenceEngine::SizeVector order(outShape.size());
+    std::iota(order.begin(), order.end(), 0);
+
     InferenceEngine::DataConfig outConf;
     outConf.desc = InferenceEngine::TensorDesc(InferenceEngine::Precision::FP32, outShape, {outShape, order, offset});
     outDataConfig.push_back(outConf);
@@ -97,7 +104,7 @@ InferenceEngine::StatusCode FFTImpl::init(InferenceEngine::LayerConfig &config, 
         THROW_IE_EXCEPTION << "Failed to load OpenCV!";
     }
 
-    if (config.inConfs.size() != 1 || config.outConfs.size() != 1) {
+    if (config.inConfs.size() != 2 || config.outConfs.size() != 1) {
         THROW_IE_EXCEPTION << "Operation cannot be initialized with incorrect number of inputs/outputs!";
     }
 
@@ -170,12 +177,12 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
     static auto cvReleaseMat = reinterpret_cast<cvReleaseMatF*>(so->get_symbol("cvReleaseMat"));
 
     float* inpData = inputs[0]->buffer();
+    float* signalDimsData = inputs[1]->buffer();
     float* outData = outputs[0]->buffer();
     std::vector<size_t> dims = inputs[0]->getTensorDesc().getDims();
 
-    for(int i = 0; i < 2; ++i)
-        std::cout << dim[i] << " ";
-    std::cout << std::endl;
+    // std::cout << signalDimsData[0] << " " << signalDimsData[1] << std::endl;
+    // std::cout << inputs[1]->getTensorDesc().getDims()[0] << std::endl;
 
     if (dims.size() == 5) {
         const int batch = dims[0];
@@ -184,6 +191,32 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
         int cols = dims[3];
         int planeSize = rows * cols * 2;  // 2 is last dimension size
         InferenceEngine::parallel_for(batch * channels, [&](size_t d) {
+            CvMat* inp = cvCreateMatHeader(rows, cols, CV_32FC2);
+            CvMat* out = cvCreateMatHeader(rows, cols, CV_32FC2);
+            cvSetData(inp, reinterpret_cast<void*>(inpData + d * planeSize), cols * 2 * sizeof(float));
+            cvSetData(out, reinterpret_cast<void*>(outData + d * planeSize), cols * 2 * sizeof(float));
+
+            if (centered)
+                fftshift(inp);
+
+            if (inverse)
+                cvDFT(inp, out, CV_DXT_INVERSE, 0);
+            else
+                cvDFT(inp, out, CV_DXT_FORWARD, 0);
+            cvScale(out, out, 1.0 / sqrtf(cols * rows), 0);
+
+            if (centered)
+                fftshift(out);
+
+            cvReleaseMat(&inp);
+            cvReleaseMat(&out);
+        });
+    } else if (dims.size() == 4 && inputs[1]->getTensorDesc().getDims()[0] == 2 && signalDimsData[0] == 1 && signalDimsData[1] == 2) {
+        const int batch = dims[0];
+        int rows = dims[1];
+        int cols = dims[2];
+        int planeSize = rows * cols * 2;  // 2 is last dimension size
+        InferenceEngine::parallel_for(batch, [&](size_t d) {
             CvMat* inp = cvCreateMatHeader(rows, cols, CV_32FC2);
             CvMat* out = cvCreateMatHeader(rows, cols, CV_32FC2);
             cvSetData(inp, reinterpret_cast<void*>(inpData + d * planeSize), cols * 2 * sizeof(float));

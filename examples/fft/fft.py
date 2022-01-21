@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 from packaging import version
 from typing import List, Tuple, Union
@@ -46,15 +47,16 @@ def ifftshift(data: torch.Tensor) -> torch.Tensor:
 
 class FFT(torch.autograd.Function):
     @staticmethod
-    def symbolic(g, x, inverse, centered=False):
-        return g.op('IFFT' if inverse else 'FFT', x,
+    def symbolic(g, x, inverse, signal_ndim, centered=False):
+        dims = torch.tensor(np.arange(1, signal_ndim + 1))
+        dims = g.op("Constant", value_t=dims)
+
+        return g.op('IFFT' if inverse else 'FFT', x, dims,
                     inverse_i=inverse, centered_i=centered)
 
     @staticmethod
-    def forward(self, x, inverse, centered=False, signal_ndim=None):
+    def forward(self, x, inverse, signal_ndim, centered=False):
         # https://pytorch.org/docs/stable/torch.html#torch.fft
-        if signal_ndim is None:
-            signal_ndim = 2 if len(x.shape) == 5 else 1
         if centered:
                 x = ifftshift(x)
 
