@@ -39,11 +39,11 @@ Extension::Extension() {
     });
     ngraph::onnx_import::register_operator(SparseConvOp::type_info.name, 1, "org.open3d", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
         ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
-        return {std::make_shared<SparseConvOp>(ng_inputs.at(0), ng_inputs.at(1), ng_inputs.at(2), ng_inputs.at(3))};
+        return {std::make_shared<SparseConvOp>(ng_inputs.at(0), ng_inputs.at(1), ng_inputs.at(2), ng_inputs.at(3), ng_inputs.at(4))};
     });
     ngraph::onnx_import::register_operator(SparseConvTransposeOp::type_info.name, 1, "org.open3d", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
         ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
-        return {std::make_shared<SparseConvTransposeOp>(ng_inputs.at(0), ng_inputs.at(1), ng_inputs.at(2), ng_inputs.at(3))};
+        return {std::make_shared<SparseConvTransposeOp>(ng_inputs.at(0), ng_inputs.at(1), ng_inputs.at(2), ng_inputs.at(3), ng_inputs.at(4))};
     });
     ngraph::onnx_import::register_operator(CalculateGridOp::type_info.name, 1, "org.open3d", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
         ngraph::OutputVector ng_inputs {node.get_ng_inputs()};

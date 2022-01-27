@@ -6,7 +6,8 @@ from torch.autograd import Variable
 from .sparse_conv import SparseConvONNX, SparseConvTransposeONNX
 
 
-def export(num_points, max_grid_extent, in_channels, filters, kernel_size, normalize, transpose):
+def export(num_inp_points, num_out_points, max_grid_extent, in_channels,
+           filters, kernel_size, normalize, transpose):
     np.random.seed(324)
     torch.manual_seed(32)
 
@@ -24,13 +25,17 @@ def export(num_points, max_grid_extent, in_channels, filters, kernel_size, norma
                                      normalize=False)
 
     # Generate a list of unique positions and add a mantissa
-    inp_pos = np.random.randint(0, max_grid_extent, [num_points, 3])
-    inp_pos = np.unique(inp_pos, axis=0).astype(np.float32)
-    inp_pos = torch.tensor(inp_pos) + torch.rand(inp_pos.shape, dtype=torch.float32) # [0, 1)
+    def gen_pos(num_points):
+        inp_pos = np.random.randint(0, max_grid_extent, [num_points, 3])
+        inp_pos = np.unique(inp_pos, axis=0).astype(np.float32)
+        inp_pos = torch.tensor(inp_pos) + torch.rand(inp_pos.shape, dtype=torch.float32) # [0, 1)
+        return inp_pos
+
+    inp_pos = gen_pos(num_inp_points)
+    out_pos = gen_pos(num_out_points) if num_out_points else inp_pos
 
     features = torch.randn([inp_pos.shape[0], in_channels])
 
-    out_pos = inp_pos
     voxel_size = torch.tensor(1.0)
     sparse_conv.eval()
 
@@ -40,13 +45,14 @@ def export(num_points, max_grid_extent, in_channels, filters, kernel_size, norma
 
     with torch.no_grad():
         torch.onnx.export(sparse_conv, (features, inp_pos, out_pos, voxel_size), 'model.onnx',
-                          input_names=['input', 'input1', 'out_pos', 'voxel_size'],
+                          input_names=['input', 'input1', 'input2', 'voxel_size'],
                           output_names=['output'],
                           operator_export_type=torch.onnx.OperatorExportTypes.ONNX_ATEN_FALLBACK)
 
     ref = sparse_conv(features, inp_pos, out_pos, voxel_size)
     np.save('inp', features.detach().numpy())
     np.save('inp1', inp_pos.detach().numpy())
+    np.save('inp2', out_pos.detach().numpy())
     np.save('ref', ref.detach().numpy())
 
 

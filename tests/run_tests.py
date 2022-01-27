@@ -96,29 +96,49 @@ def test_complex_mul(shape, test_onnx):
 @pytest.mark.parametrize("filters", [1, 4])
 @pytest.mark.parametrize("kernel_size", [[3, 3, 3], [5, 5, 5], [2, 2, 2]])
 @pytest.mark.parametrize("normalize", [False, True])
-def test_sparse_conv(in_channels, filters, kernel_size, normalize):
+@pytest.mark.parametrize("out_pos", [None, 16])
+def test_sparse_conv(in_channels, filters, kernel_size, normalize, out_pos):
     from examples.sparse_conv.export_model import export
 
-    export(num_points=1000, max_grid_extent=4, in_channels=in_channels,
+    export(num_inp_points=1000, num_out_points=out_pos, max_grid_extent=4, in_channels=in_channels,
            filters=filters, kernel_size=kernel_size, normalize=normalize,
            transpose=False)
-    run_test(num_inputs=2, test_onnx=True, threshold=1e-4)
+    run_test(num_inputs=3, test_onnx=True, threshold=1e-4)
 
 
 @pytest.mark.parametrize("in_channels", [1, 3])
 @pytest.mark.parametrize("filters", [1, 4])
 @pytest.mark.parametrize("kernel_size", [[3, 3, 3], [5, 5, 5]])
 @pytest.mark.parametrize("normalize", [False])
-def test_sparse_conv_transpose(in_channels, filters, kernel_size, normalize):
+@pytest.mark.parametrize("out_pos", [None, 16])
+def test_sparse_conv_transpose(in_channels, filters, kernel_size, normalize, out_pos):
     from examples.sparse_conv.export_model import export
 
-    export(num_points=1000, max_grid_extent=4, in_channels=in_channels,
+    export(num_inp_points=1000, num_out_points=out_pos, max_grid_extent=4, in_channels=in_channels,
            filters=filters, kernel_size=kernel_size, normalize=normalize,
            transpose=True)
-    run_test(num_inputs=2, test_onnx=True, threshold=1e-4)
+    run_test(num_inputs=3, test_onnx=True, threshold=1e-4)
 
 
 def test_calculate_grid():
     from examples.calculate_grid.export_model import export
     export(num_points=10, max_grid_extent=5)
     run_test(test_onnx=True)
+
+
+def test_deformable_conv():
+    from examples.deformable_conv.export_model import export
+
+    export(
+        inplanes=15,
+        outplanes=15,
+        kernel_size=3,
+        stride=1,
+        padding=1,
+        dilation=1,
+        deformable_groups=1,
+        inp_shape=[1, 15, 128, 240],
+        offset_shape=[1, 18, 128, 240],
+    )
+    run_test(num_inputs=2, threshold=2e-5)
+    run_test(num_inputs=2, test_onnx=True, threshold=2e-5)

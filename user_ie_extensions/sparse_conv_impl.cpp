@@ -15,7 +15,7 @@ SparseConvImpl::SparseConvImpl(const std::shared_ptr<ngraph::Node> &node) {
         auto castedNode = std::dynamic_pointer_cast<SparseConvOp>(node);
         if (!castedNode)
             THROW_IE_EXCEPTION << "Cannot create implementation for unknown operation!";
-        if (castedNode->inputs().size() != 4 || castedNode->outputs().size() != 1)
+        if (castedNode->inputs().size() != 5 || castedNode->outputs().size() != 1)
             THROW_IE_EXCEPTION << "Cannot create implementation for operation with incorrect number of inputs or outputs!";
         if (castedNode->get_input_partial_shape(0).is_dynamic() || castedNode->get_output_partial_shape(0).is_dynamic())
             THROW_IE_EXCEPTION << "Cannot create implementation for op with dynamic shapes!";
@@ -23,8 +23,8 @@ SparseConvImpl::SparseConvImpl(const std::shared_ptr<ngraph::Node> &node) {
             THROW_IE_EXCEPTION << "Operation supports only 4d tensors for input and output.";
         if (castedNode->get_input_element_type(0) != ngraph::element::f32 || castedNode->get_output_element_type(0) != ngraph::element::f32)
             THROW_IE_EXCEPTION << "Operation supports only FP32 tensors.";
-        inShapes.resize(4);
-        for (int i = 0; i < 4; ++i)
+        inShapes.resize(5);
+        for (int i = 0; i < inShapes.size(); ++i)
             inShapes[i] = castedNode->get_input_shape(i);
         outShape = castedNode->get_output_shape(0);
     } catch (InferenceEngine::details::InferenceEngineException& ex) {
@@ -73,7 +73,7 @@ InferenceEngine::StatusCode SparseConvImpl::getSupportedConfigurations(std::vect
 //! [cpu_implementation:init]
 InferenceEngine::StatusCode SparseConvImpl::init(InferenceEngine::LayerConfig &config, InferenceEngine::ResponseDesc *resp) noexcept {
     try {
-        if (config.inConfs.size() != 4 || config.outConfs.size() != 1) {
+        if (config.inConfs.size() != 5 || config.outConfs.size() != 1) {
             THROW_IE_EXCEPTION << "Operation cannot be initialized with incorrect number of inputs/outputs!";
         }
 
@@ -103,13 +103,15 @@ InferenceEngine::StatusCode SparseConvImpl::execute(std::vector<InferenceEngine:
                                                     InferenceEngine::ResponseDesc *resp) noexcept {
     const float* features = inputs[0]->cbuffer().as<float*>();
     const float* inpPos = inputs[1]->cbuffer().as<float*>();
-    const float* kernel = inputs[2]->cbuffer().as<float*>();
-    const float* offset = inputs[3]->cbuffer().as<float*>();
+    const float* outPos = inputs[2]->cbuffer().as<float*>();
+    const float* kernel = inputs[3]->cbuffer().as<float*>();
+    const float* offset = inputs[4]->cbuffer().as<float*>();
     float* out = outputs[0]->buffer().as<float*>();
     memset(out, 0, outputs[0]->byteSize());
 
-    size_t numPoints = inputs[1]->getTensorDesc().getDims()[0];
-    std::vector<size_t> kernelDims = inputs[2]->getTensorDesc().getDims();
+    size_t numInpPoints = inputs[1]->getTensorDesc().getDims()[0];
+    const size_t numOutPoints = inputs[2]->getTensorDesc().getDims()[0];
+    std::vector<size_t> kernelDims = inputs[3]->getTensorDesc().getDims();
 
     // Kernel layout is DxHxWxICxOH
     const int kd = kernelDims[0];
@@ -123,20 +125,20 @@ InferenceEngine::StatusCode SparseConvImpl::execute(std::vector<InferenceEngine:
     float rh = kh * 0.51f;
     float rd = kd * 0.51f;
 
-    for (size_t i = 0; i < numPoints; ++i) {
+    for (size_t i = 0; i < numInpPoints; ++i) {
         if (inpPos[i * 3] < 0) {
-            numPoints = i;
+            numInpPoints = i;
             break;
         }
     }
 
-    for (size_t i = 0; i < numPoints; ++i) {
-        const float xi = inpPos[i * 3] - offset[0];
-        const float yi = inpPos[i * 3 + 1] - offset[1];
-        const float zi = inpPos[i * 3 + 2] - offset[2];
+    for (size_t i = 0; i < numOutPoints; ++i) {
+        const float xi = outPos[i * 3] - offset[0];
+        const float yi = outPos[i * 3 + 1] - offset[1];
+        const float zi = outPos[i * 3 + 2] - offset[2];
 
         // Accumulate features which inside the kernel
-        for (size_t j = 0; j < numPoints; ++j) {
+        for (size_t j = 0; j < numInpPoints; ++j) {
             const float xj = inpPos[j * 3];
             const float yj = inpPos[j * 3 + 1];
             const float zj = inpPos[j * 3 + 2];

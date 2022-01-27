@@ -11,18 +11,19 @@ constexpr ngraph::NodeTypeInfo SparseConvTransposeOp::type_info;
 SparseConvTransposeOp::SparseConvTransposeOp(
     const ngraph::Output<ngraph::Node>& features,
     const ngraph::Output<ngraph::Node>& inp_pos,
+    const ngraph::Output<ngraph::Node>& out_pos,
     const ngraph::Output<ngraph::Node>& kernel,
     const ngraph::Output<ngraph::Node>& offset
 )
-    : Op({features, inp_pos, kernel, offset}) {
+    : Op({features, inp_pos, out_pos, kernel, offset}) {
     constructor_validate_and_infer_types();
 }
 //! [op:ctor]
 
 //! [op:validate]
 void SparseConvTransposeOp::validate_and_infer_types() {
-    auto outShape = get_input_partial_shape(0);
-    auto kernelShape = get_input_partial_shape(2);
+    auto outShape = get_input_partial_shape(2);
+    auto kernelShape = get_input_partial_shape(3);
     outShape[1] = kernelShape[4];
     set_output_type(0, get_input_element_type(0), outShape);
 }
@@ -30,10 +31,10 @@ void SparseConvTransposeOp::validate_and_infer_types() {
 
 //! [op:copy]
 std::shared_ptr<ngraph::Node> SparseConvTransposeOp::clone_with_new_inputs(const ngraph::OutputVector &new_args) const {
-    if (new_args.size() != 4) {
+    if (new_args.size() != 5) {
         throw ngraph::ngraph_error("Incorrect number of new arguments");
     }
-    return std::make_shared<SparseConvTransposeOp>(new_args.at(0), new_args.at(1), new_args.at(2), new_args.at(3));
+    return std::make_shared<SparseConvTransposeOp>(new_args.at(0), new_args.at(1), new_args.at(2), new_args.at(3), new_args.at(4));
 }
 //! [op:copy]
 

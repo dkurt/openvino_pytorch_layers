@@ -80,6 +80,7 @@ public:
     SparseConvOp() = default;
     SparseConvOp(const ngraph::Output<ngraph::Node>& features,
                  const ngraph::Output<ngraph::Node>& inp_pos,
+                 const ngraph::Output<ngraph::Node>& out_pos,
                  const ngraph::Output<ngraph::Node>& kernel,
                  const ngraph::Output<ngraph::Node>& offset);
     void validate_and_infer_types() override;
@@ -95,6 +96,7 @@ public:
     SparseConvTransposeOp() = default;
     SparseConvTransposeOp(const ngraph::Output<ngraph::Node>& features,
                           const ngraph::Output<ngraph::Node>& inp_pos,
+                          const ngraph::Output<ngraph::Node>& out_pos,
                           const ngraph::Output<ngraph::Node>& kernel,
                           const ngraph::Output<ngraph::Node>& offset);
     void validate_and_infer_types() override;
