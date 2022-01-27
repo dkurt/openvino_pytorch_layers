@@ -72,6 +72,50 @@ public:
     bool visit_attributes(ngraph::AttributeVisitor& visitor) override;
 };
 
+class SparseConvOp : public ngraph::op::Op {
+public:
+    static constexpr ngraph::NodeTypeInfo type_info{"SparseConv", 0};
+    const ngraph::NodeTypeInfo& get_type_info() const override { return type_info;  }
+
+    SparseConvOp() = default;
+    SparseConvOp(const ngraph::Output<ngraph::Node>& features,
+                 const ngraph::Output<ngraph::Node>& inp_pos,
+                 const ngraph::Output<ngraph::Node>& out_pos,
+                 const ngraph::Output<ngraph::Node>& kernel,
+                 const ngraph::Output<ngraph::Node>& offset);
+    void validate_and_infer_types() override;
+    std::shared_ptr<ngraph::Node> clone_with_new_inputs(const ngraph::OutputVector& new_args) const override;
+    bool visit_attributes(ngraph::AttributeVisitor& visitor) override;
+};
+
+class SparseConvTransposeOp : public ngraph::op::Op {
+public:
+    static constexpr ngraph::NodeTypeInfo type_info{"SparseConvTranspose", 0};
+    const ngraph::NodeTypeInfo& get_type_info() const override { return type_info;  }
+
+    SparseConvTransposeOp() = default;
+    SparseConvTransposeOp(const ngraph::Output<ngraph::Node>& features,
+                          const ngraph::Output<ngraph::Node>& inp_pos,
+                          const ngraph::Output<ngraph::Node>& out_pos,
+                          const ngraph::Output<ngraph::Node>& kernel,
+                          const ngraph::Output<ngraph::Node>& offset);
+    void validate_and_infer_types() override;
+    std::shared_ptr<ngraph::Node> clone_with_new_inputs(const ngraph::OutputVector& new_args) const override;
+    bool visit_attributes(ngraph::AttributeVisitor& visitor) override;
+};
+
+class CalculateGridOp : public ngraph::op::Op {
+public:
+    static constexpr ngraph::NodeTypeInfo type_info{"calculate_grid", 0};
+    const ngraph::NodeTypeInfo& get_type_info() const override { return type_info;  }
+
+    CalculateGridOp() = default;
+    CalculateGridOp(const ngraph::Output<ngraph::Node>& inp_pos);
+    void validate_and_infer_types() override;
+    std::shared_ptr<ngraph::Node> clone_with_new_inputs(const ngraph::OutputVector& new_args) const override;
+    bool visit_attributes(ngraph::AttributeVisitor& visitor) override;
+};
+
 //! [op:header]
 
 }  // namespace TemplateExtension
