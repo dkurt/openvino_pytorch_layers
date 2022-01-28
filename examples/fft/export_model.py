@@ -7,23 +7,19 @@ from .fft import FFT
 
 
 class MyModel(nn.Module):
-    def __init__(self):
+    def __init__(self, inverse):
         super(MyModel, self).__init__()
         self.fft = FFT()
+        self.inverse = inverse
 
     def forward(self, x):
-        y = self.fft.apply(x, False)
-        y = y * 2
-        # TODO: there is a bug with "inverse" data attribute in OpenVINO 2021.4
-        y = self.fft.apply(y, True)
-        return y
+        return self.fft.apply(x, self.inverse)
 
-
-def export(shape):
+def export(shape, inverse):
     np.random.seed(324)
     torch.manual_seed(32)
 
-    model = MyModel()
+    model = MyModel(inverse)
     inp = Variable(torch.randn(shape))
     model.eval()
 
