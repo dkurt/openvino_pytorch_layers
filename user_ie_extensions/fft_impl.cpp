@@ -180,12 +180,20 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
     float* signalDimsData = inputs[1]->buffer();
     float* outData = outputs[0]->buffer();
     std::vector<size_t> dims = inputs[0]->getTensorDesc().getDims();
+    const size_t numSignalDims = inputs[1]->getTensorDesc().getDims()[0];
 
-    // std::cout << signalDimsData[0] << " " << signalDimsData[1] << std::endl;
-    // std::cout << inputs[1]->getTensorDesc().getDims()[0] << std::endl;
+    if (!(dims.size() == 3 && (numSignalDims == 1 && signalDimsData[0] == 1) ||
+          dims.size() == 4 && ((numSignalDims == 1 && signalDimsData[0] == 1) ||
+                               (numSignalDims == 2 && signalDimsData[0] == 1 && signalDimsData[1] == 2)) ||
+          dims.size() == 5 && ((numSignalDims == 1 && signalDimsData[0] == 1) ||
+                               (numSignalDims == 2 && signalDimsData[0] == 1 && signalDimsData[1] == 2) ||
+                               (numSignalDims == 2 && signalDimsData[0] == 2 && signalDimsData[1] == 3)))) {
+        THROW_IE_EXCEPTION << "Unsupported configuration!";
+    }
+
+    const int batch = dims[0];
 
     if (dims.size() == 5) {
-        const int batch = dims[0];
         const int channels = dims[1];
         int rows = dims[2];
         int cols = dims[3];
@@ -212,7 +220,6 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             cvReleaseMat(&out);
         });
     } else if (dims.size() == 4 && inputs[1]->getTensorDesc().getDims()[0] == 2 && signalDimsData[0] == 1 && signalDimsData[1] == 2) {
-        const int batch = dims[0];
         int rows = dims[1];
         int cols = dims[2];
         int planeSize = rows * cols * 2;  // 2 is last dimension size
@@ -237,25 +244,53 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             cvReleaseMat(&inp);
             cvReleaseMat(&out);
         });
-    } else {
-        int rows, cols;
-        if (dims.size() == 4) {
-            rows = dims[0] * dims[1];
-            cols = dims[2];
-        } else if (dims.size() == 3) {
-            rows = dims[0];
-            cols = dims[1];
-        }
+    } else if (dims.size() == 4 && numSignalDims == 1 && signalDimsData[0] == 1) {
+        int rows = dims[1];
+        int cols = dims[2];
+
+        const int planeSize = rows;
+        InferenceEngine::parallel_for(batch * cols, [&](size_t d) {
+            int b = d / cols;
+            int col = d % cols;
+            CvMat* inp = cvCreateMatHeader(rows, 1, CV_32FC2);
+            CvMat* out = cvCreateMatHeader(rows, 1, CV_32FC2);
+            cvSetData(inp, reinterpret_cast<void*>(inpData + (b * planeSize * cols + col) * 2), cols * 2 * sizeof(float));
+            cvSetData(out, reinterpret_cast<void*>(outData + (b * planeSize * cols + col) * 2), cols * 2 * sizeof(float));
+
+            if (centered)
+                fftshift(inp);
+
+            if (inverse)
+                cvDFT(inp, out, CV_DXT_INVERSE, 0);
+            else
+                cvDFT(inp, out, CV_DXT_FORWARD, 0);
+            cvScale(out, out, 1.0 / sqrtf(rows), 0);
+
+            if (centered)
+                fftshift(out);
+
+            cvReleaseMat(&inp);
+            cvReleaseMat(&out);
+        });
+    } else if (dims.size() == 3) {
+        int rows = dims[0];
+        int cols = dims[1];
         CvMat* inp = cvCreateMatHeader(rows, cols, CV_32FC2);
         CvMat* out = cvCreateMatHeader(rows, cols, CV_32FC2);
         cvSetData(inp, reinterpret_cast<void*>(inpData), cols * 2 * sizeof(float));
         cvSetData(out, reinterpret_cast<void*>(outData), cols * 2 * sizeof(float));
+
+        if (centered)
+            fftshift(inp);
 
         if (inverse)
             cvDFT(inp, out, CV_DXT_INVERSE | CV_DXT_ROWS, 0);
         else
             cvDFT(inp, out, CV_DXT_FORWARD | CV_DXT_ROWS, 0);
         cvScale(out, out, 1.0 / sqrtf(cols), 0);
+
+        if (centered)
+            fftshift(out);
 
         cvReleaseMat(&inp);
         cvReleaseMat(&out);

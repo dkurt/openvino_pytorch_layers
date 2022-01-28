@@ -47,25 +47,27 @@ def ifftshift(data: torch.Tensor) -> torch.Tensor:
 
 class FFT(torch.autograd.Function):
     @staticmethod
-    def symbolic(g, x, inverse, signal_ndim, centered=False):
-        dims = torch.tensor(np.arange(1, signal_ndim + 1))
+    def symbolic(g, x, inverse, centered, dims):
+        dims = torch.tensor(dims)
         dims = g.op("Constant", value_t=dims)
 
         return g.op('IFFT' if inverse else 'FFT', x, dims,
                     inverse_i=inverse, centered_i=centered)
 
     @staticmethod
-    def forward(self, x, inverse, signal_ndim, centered=False):
+    def forward(self, x, inverse, centered, dims):
         # https://pytorch.org/docs/stable/torch.html#torch.fft
         if centered:
-                x = ifftshift(x)
+            x = ifftshift(x)
 
         if version.parse(torch.__version__) >= version.parse("1.8.0"):
             func = torch.fft.ifftn if inverse else torch.fft.fftn
             x = torch.view_as_complex(x)
-            y = func(x, dim=list(range(1, signal_ndim + 1)), norm="ortho")
+            y = func(x, dim=dims, norm="ortho")
             y = torch.view_as_real(y)
         else:
+            signal_ndim = max(dims)
+            assert dims == list(range(1, signal_ndim + 1))
             func = torch.ifft if inverse else torch.fft
             y = func(input=x, signal_ndim=signal_ndim, normalized=True)
 
