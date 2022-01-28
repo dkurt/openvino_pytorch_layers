@@ -61,13 +61,15 @@ def test_unpool_reshape():
     run_test(convert_ir=False)
 
 @pytest.mark.parametrize("shape", [[5, 120, 2], [4, 240, 320, 2], [3, 5, 240, 320, 2]])
-def test_fft(shape):
+@pytest.mark.parametrize("inverse", [False, True])
+@pytest.mark.parametrize("test_onnx", [False, True])
+def test_fft(shape, inverse, test_onnx):
     from examples.fft.export_model import export
 
-    export(shape=shape)
-    run_test()
+    export(shape, inverse)
+    run_test(test_onnx=test_onnx)
 
-@pytest.mark.parametrize("test_onnx", [True, False])
+@pytest.mark.parametrize("test_onnx", [False, True])
 def test_fft_roll(test_onnx):
     from examples.fft.export_model_with_roll import export
 
