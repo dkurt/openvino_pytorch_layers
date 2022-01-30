@@ -20,6 +20,8 @@ using cvCloneMatF = CvMat*(const CvMat*);
 using cvCopyF = void(const CvArr*, const CvArr*, const CvArr*);
 using cvInitMatHeaderF = CvMat*(CvMat*, int, int, int, void*, int);
 using cvGetRawDataF = void(const CvArr*, uchar**, int* step, CvSize* roi_size);
+using cvReshapeF = CvMat*(const CvArr*, CvMat*, int, int);
+using cvCreateDataF = void(CvArr*);
 
 bool loadOpenCV() {
     static bool loaded = false;
@@ -175,6 +177,10 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
     static auto cvDFT = reinterpret_cast<cvDftF*>(so->get_symbol("cvDFT"));
     static auto cvScale = reinterpret_cast<cvScaleF*>(so->get_symbol("cvConvertScale"));
     static auto cvReleaseMat = reinterpret_cast<cvReleaseMatF*>(so->get_symbol("cvReleaseMat"));
+    static auto cvReshape = reinterpret_cast<cvReshapeF*>(so->get_symbol("cvReshape"));
+    static auto cvCloneMat = reinterpret_cast<cvCloneMatF*>(so->get_symbol("cvCloneMat"));
+    static auto cvCreateData = reinterpret_cast<cvCreateDataF*>(so->get_symbol("cvCreateData"));
+    static auto cvCopy = reinterpret_cast<cvCopyF*>(so->get_symbol("cvCopy"));
 
     float* inpData = inputs[0]->buffer();
     float* signalDimsData = inputs[1]->buffer();
@@ -185,15 +191,59 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
     if (!(dims.size() == 3 && (numSignalDims == 1 && signalDimsData[0] == 1) ||
           dims.size() == 4 && ((numSignalDims == 1 && signalDimsData[0] == 1) ||
                                (numSignalDims == 2 && signalDimsData[0] == 1 && signalDimsData[1] == 2)) ||
-          dims.size() == 5 && ((numSignalDims == 1 && signalDimsData[0] == 1) ||
-                               (numSignalDims == 2 && signalDimsData[0] == 1 && signalDimsData[1] == 2) ||
+          dims.size() == 5 && ((numSignalDims == 2 && signalDimsData[0] == 1 && signalDimsData[1] == 2) ||
                                (numSignalDims == 2 && signalDimsData[0] == 2 && signalDimsData[1] == 3)))) {
         THROW_IE_EXCEPTION << "Unsupported configuration!";
     }
 
     const int batch = dims[0];
 
-    if (dims.size() == 5) {
+    if (dims.size() == 5 && numSignalDims == 2 && signalDimsData[0] == 1 && signalDimsData[1] == 2) {
+        const int channels = dims[1];
+        int rows = dims[2];
+        int cols = dims[3];
+        const int planeSize = channels * rows * cols;
+        InferenceEngine::parallel_for(batch * cols, [&](size_t d) {
+            int b = d / cols;
+            int col = d % cols;
+            // Copy a slice from input
+            CvMat* inpSlice = cvCreateMatHeader(channels * rows, 1, CV_32FC2);
+            CvMat* outSlice = cvCreateMatHeader(channels * rows, 1, CV_32FC2);
+            cvSetData(inpSlice, reinterpret_cast<void*>(inpData + (b * planeSize + col) * 2), cols * 2 * sizeof(float));
+            cvSetData(outSlice, reinterpret_cast<void*>(outData + (b * planeSize + col) * 2), cols * 2 * sizeof(float));
+
+            CvMat* inp_col = cvCloneMat(inpSlice);
+
+            CvMat inp_header, *inp;
+            inp = cvReshape(inp_col, &inp_header, 2, channels);
+
+            CvMat* out = cvCreateMatHeader(channels, rows, CV_32FC2);
+            cvCreateData(out);
+
+            // if (centered)
+            //     fftshift(inp);
+
+            if (inverse)
+                cvDFT(inp, out, CV_DXT_INVERSE, 0);
+            else
+                cvDFT(inp, out, CV_DXT_FORWARD, 0);
+            cvScale(out, out, 1.0 / sqrtf(channels * rows), 0);
+
+            // if (centered)
+            //     fftshift(out);
+
+            CvMat out_col_header, *out_col;
+            out_col = cvReshape(out, &out_col_header, 2, channels * rows);
+
+            CvArr* mask = 0;
+            cvCopy(out_col, outSlice, mask);
+
+            // cvReleaseMat(&inp);
+            // cvReleaseMat(&out);
+            // cvReleaseMat(&inpSlice);
+            // cvReleaseMat(&outSlice);
+        });
+    } else if (dims.size() == 5 && numSignalDims == 2 && signalDimsData[0] == 2 && signalDimsData[1] == 3) {
         const int channels = dims[1];
         int rows = dims[2];
         int cols = dims[3];
