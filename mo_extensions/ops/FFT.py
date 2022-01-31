@@ -13,7 +13,7 @@ class FFT(Op):
             {
                 "type": __class__.op,
                 "op": __class__.op,
-                "in_ports_count": 1,
+                "in_ports_count": 2,
                 "out_ports_count": 1,
                 "infer": copy_shape_infer,
             },
@@ -21,7 +21,7 @@ class FFT(Op):
         )
 
     def supported_attrs(self):
-        return ["inverse"]
+        return ["inverse", "centered"]
 
 
 class IFFT(Op):
@@ -34,7 +34,7 @@ class IFFT(Op):
             {
                 "type": __class__.op,
                 "op": __class__.op,
-                "in_ports_count": 1,
+                "in_ports_count": 2,
                 "out_ports_count": 1,
                 "infer": copy_shape_infer,
             },
@@ -42,4 +42,4 @@ class IFFT(Op):
         )
 
     def supported_attrs(self):
-        return ["inverse"]
+        return ["inverse", "centered"]

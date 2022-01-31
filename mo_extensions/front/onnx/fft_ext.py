@@ -11,6 +11,7 @@ class FFTFrontExtractor(FrontExtractorOp):
     def extract(cls, node):
         data = {
             "inverse": onnx_attr(node, "inverse", "i"),
+            "centered": onnx_attr(node, "centered", "i"),
         }
 
         FFT.update_node_stat(node, data)
@@ -25,6 +26,7 @@ class IFFTFrontExtractor(FrontExtractorOp):
     def extract(cls, node):
         data = {
             "inverse": 1,
+            "centered": onnx_attr(node, "centered", "i"),
         }
 
         IFFT.update_node_stat(node, data)
