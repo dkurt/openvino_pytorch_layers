@@ -60,7 +60,7 @@ def test_unpool_reshape():
     export(mode='dynamic_size', shape=[4, 3, 17, 8])
     run_test(convert_ir=False)
 
-@pytest.mark.parametrize("shape", [[5, 120, 2], [4, 240, 320, 2], [3, 16, 240, 320, 2]])
+@pytest.mark.parametrize("shape", [[5, 120, 2], [4, 240, 320, 2], [3, 16, 240, 320, 2], [4, 5, 16, 31, 2]])
 @pytest.mark.parametrize("inverse", [False, True])
 @pytest.mark.parametrize("centered", [False, True])
 @pytest.mark.parametrize("test_onnx", [False, True])
