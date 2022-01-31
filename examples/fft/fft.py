@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 from packaging import version
 from typing import List, Tuple, Union
