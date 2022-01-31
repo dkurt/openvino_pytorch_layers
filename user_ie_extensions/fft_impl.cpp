@@ -119,7 +119,7 @@ InferenceEngine::StatusCode FFTImpl::init(InferenceEngine::LayerConfig &config, 
 }
 //! [cpu_implementation:init]
 
-static void fftshift(CvMat* src) {
+static void fftshift(CvMat* src, bool inverse) {
     static auto cvCloneMat = reinterpret_cast<cvCloneMatF*>(so->get_symbol("cvCloneMat"));
     static auto cvCopy = reinterpret_cast<cvCopyF*>(so->get_symbol("cvCopy"));
     static auto cvInitMatHeader = reinterpret_cast<cvInitMatHeaderF*>(so->get_symbol("cvInitMatHeader"));
@@ -140,6 +140,55 @@ static void fftshift(CvMat* src) {
     int width = size.width;
     int h2 = height / 2;
     int w2 = width / 2;
+
+    if (height % 2 || width % 2) {
+        // Swap rows.
+        CvMat* srcTop = new CvMat();
+        CvMat* srcBot = new CvMat();
+        CvMat* dstTop = new CvMat();
+        CvMat* dstBot = new CvMat();
+        int topH = inverse ? h2 : (h2 + height % 2);
+        int botH = height - topH;
+        cvInitMatHeader(srcTop, topH, width, CV_32FC2, data, step);
+        cvInitMatHeader(srcBot, botH, width, CV_32FC2, data + topH * width * 2, step);
+        cvInitMatHeader(dstTop, topH, width, CV_32FC2, data + botH * width * 2, step);
+        cvInitMatHeader(dstBot, botH, width, CV_32FC2, data, step);
+
+        CvMat* tmp = cvCloneMat(srcTop);
+        cvCopy(srcBot, dstBot, 0);
+        cvCopy(tmp, dstTop, 0);
+
+        cvReleaseMat(&tmp);
+        delete srcTop;
+        delete srcBot;
+        delete dstTop;
+        delete dstBot;
+
+        // Swap columns.
+        CvMat* srcL = new CvMat();
+        CvMat* srcR = new CvMat();
+        CvMat* dstL = new CvMat();
+        CvMat* dstR = new CvMat();
+        int leftW = inverse ? w2 : (w2 + width % 2);
+        int rightW = width - leftW;
+
+        cvInitMatHeader(srcL, height, leftW, CV_32FC2, data, step);
+        cvInitMatHeader(srcR, height, rightW, CV_32FC2, data + leftW * 2, step);
+        cvInitMatHeader(dstL, height, leftW, CV_32FC2, data + rightW * 2, step);
+        cvInitMatHeader(dstR, height, rightW, CV_32FC2, data, step);
+
+        tmp = cvCloneMat(srcL);
+        cvCopy(srcR, dstR, 0);
+        cvCopy(tmp, dstL, 0);
+
+        cvReleaseMat(&tmp);
+        delete srcL;
+        delete srcR;
+        delete dstL;
+        delete dstR;
+
+        return;
+    }
 
     CvMat* tl = new CvMat();
     CvMat* tr = new CvMat();
@@ -222,7 +271,7 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             cvCreateData(out);
 
             if (centered)
-                fftshift(inp);
+                fftshift(inp, true);
 
             if (inverse)
                 cvDFT(inp, out, CV_DXT_INVERSE, 0);
@@ -231,7 +280,7 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             cvScale(out, out, 1.0 / sqrtf(channels * rows), 0);
 
             if (centered)
-                fftshift(out);
+                fftshift(out, false);
 
             CvMat out_col_header, *out_col;
             out_col = cvReshape(out, &out_col_header, 2, channels * rows);
@@ -259,7 +308,7 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             cvSetData(out, reinterpret_cast<void*>(outData + d * planeSize), cols * 2 * sizeof(float));
 
             if (centered)
-                fftshift(inp);
+                fftshift(inp, true);
 
             if (inverse)
                 cvDFT(inp, out, CV_DXT_INVERSE, 0);
@@ -268,7 +317,7 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             cvScale(out, out, 1.0 / sqrtf(cols * rows), 0);
 
             if (centered)
-                fftshift(out);
+                fftshift(out, false);
 
             cvReleaseMat(&inp);
             cvReleaseMat(&out);
@@ -284,7 +333,7 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             cvSetData(out, reinterpret_cast<void*>(outData + d * planeSize), cols * 2 * sizeof(float));
 
             if (centered)
-                fftshift(inp);
+                fftshift(inp, true);
 
             if (inverse)
                 cvDFT(inp, out, CV_DXT_INVERSE, 0);
@@ -293,7 +342,7 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             cvScale(out, out, 1.0 / sqrtf(cols * rows), 0);
 
             if (centered)
-                fftshift(out);
+                fftshift(out, false);
 
             cvReleaseMat(&inp);
             cvReleaseMat(&out);
@@ -312,7 +361,7 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             cvSetData(out, reinterpret_cast<void*>(outData + (b * planeSize * cols + col) * 2), cols * 2 * sizeof(float));
 
             if (centered)
-                fftshift(inp);
+                fftshift(inp, true);
 
             if (inverse)
                 cvDFT(inp, out, CV_DXT_INVERSE, 0);
@@ -321,7 +370,7 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             cvScale(out, out, 1.0 / sqrtf(rows), 0);
 
             if (centered)
-                fftshift(out);
+                fftshift(out, false);
 
             cvReleaseMat(&inp);
             cvReleaseMat(&out);
