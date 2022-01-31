@@ -62,7 +62,7 @@ def test_unpool_reshape():
 
 @pytest.mark.parametrize("shape", [[5, 120, 2], [4, 240, 320, 2], [3, 16, 240, 320, 2]])
 @pytest.mark.parametrize("inverse", [False, True])
-@pytest.mark.parametrize("centered", [False])
+@pytest.mark.parametrize("centered", [False, True])
 @pytest.mark.parametrize("test_onnx", [True])
 @pytest.mark.parametrize("dims", [[1], [1, 2], [2, 3]])
 def test_fft(shape, inverse, centered, test_onnx, dims):
@@ -70,7 +70,8 @@ def test_fft(shape, inverse, centered, test_onnx, dims):
 
     if len(shape) == 3 and dims != [1] or \
        len(shape) == 4 and dims == [2, 3] or \
-       len(shape) == 5 and dims == [1]:
+       len(shape) == 5 and dims == [1] or \
+       centered and len(dims) != 2:
         pytest.skip("unsupported configuration")
 
     export(shape, inverse, centered, dims)

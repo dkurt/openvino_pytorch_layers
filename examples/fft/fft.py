@@ -35,15 +35,13 @@ def roll(
     right_part = data.narrow(dim_index, data.size(dims) - shift, shift)
     return torch.cat([right_part, left_part], dim=dim_index)
 
-def fftshift(data: torch.Tensor) -> torch.Tensor:
-    dim = (1, 2)
-    shift = [data.size(curr_dim) // 2 for curr_dim in dim]
-    return roll(data, shift, dim)
+def fftshift(data: torch.Tensor, dims) -> torch.Tensor:
+    shift = [data.size(curr_dim) // 2 for curr_dim in dims]
+    return roll(data, shift, dims)
 
-def ifftshift(data: torch.Tensor) -> torch.Tensor:
-    dim = (1, 2)
-    shift = [(data.size(curr_dim) + 1) // 2 for curr_dim in dim]
-    return roll(data, shift, dim)
+def ifftshift(data: torch.Tensor, dims) -> torch.Tensor:
+    shift = [(data.size(curr_dim) + 1) // 2 for curr_dim in dims]
+    return roll(data, shift, dims)
 
 class FFT(torch.autograd.Function):
     @staticmethod
@@ -58,7 +56,7 @@ class FFT(torch.autograd.Function):
     def forward(self, x, inverse, centered, dims):
         # https://pytorch.org/docs/stable/torch.html#torch.fft
         if centered:
-            x = ifftshift(x)
+            x = ifftshift(x, dims)
 
         if version.parse(torch.__version__) >= version.parse("1.8.0"):
             func = torch.fft.ifftn if inverse else torch.fft.fftn
@@ -72,6 +70,6 @@ class FFT(torch.autograd.Function):
             y = func(input=x, signal_ndim=signal_ndim, normalized=True)
 
         if centered:
-            y = fftshift(y)
+            y = fftshift(y, dims)
 
         return y

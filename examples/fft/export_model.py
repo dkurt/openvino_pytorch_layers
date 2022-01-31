@@ -30,7 +30,7 @@ def export(shape, inverse, centered, dims):
         torch.onnx.export(model, inp, 'model.onnx',
                           input_names=['input'],
                           output_names=['output'],
-                          operator_export_type=torch.onnx.OperatorExportTypes.ONNX_ATEN_FALLBACK)
+                          operator_export_type=torch.onnx.OperatorExportTypes.ONNX_FALLTHROUGH)
 
     ref = model(inp)
     np.save('inp', inp.detach().numpy())

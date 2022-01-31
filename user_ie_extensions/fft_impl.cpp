@@ -220,8 +220,8 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             CvMat* out = cvCreateMatHeader(channels, rows, CV_32FC2);
             cvCreateData(out);
 
-            // if (centered)
-            //     fftshift(inp);
+            if (centered)
+                fftshift(inp);
 
             if (inverse)
                 cvDFT(inp, out, CV_DXT_INVERSE, 0);
@@ -229,8 +229,8 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
                 cvDFT(inp, out, CV_DXT_FORWARD, 0);
             cvScale(out, out, 1.0 / sqrtf(channels * rows), 0);
 
-            // if (centered)
-            //     fftshift(out);
+            if (centered)
+                fftshift(out);
 
             CvMat out_col_header, *out_col;
             out_col = cvReshape(out, &out_col_header, 2, channels * rows);
