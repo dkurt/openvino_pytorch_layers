@@ -22,6 +22,7 @@ using cvInitMatHeaderF = CvMat*(CvMat*, int, int, int, void*, int);
 using cvGetRawDataF = void(const CvArr*, uchar**, int* step, CvSize* roi_size);
 using cvReshapeF = CvMat*(const CvArr*, CvMat*, int, int);
 using cvCreateDataF = void(CvArr*);
+using cvReleaseDataF = void(CvArr*);
 
 bool loadOpenCV() {
     static bool loaded = false;
@@ -126,7 +127,6 @@ static void fftshift(CvMat* src) {
     static auto cvReleaseMat = reinterpret_cast<cvReleaseMatF*>(so->get_symbol("cvReleaseMat"));
 
 
-    // for dim = (2, 3):
     // tl | tr        br | bl
     // ---+---   ->   ---+---
     // bl | br        tr | tl
@@ -180,6 +180,7 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
     static auto cvReshape = reinterpret_cast<cvReshapeF*>(so->get_symbol("cvReshape"));
     static auto cvCloneMat = reinterpret_cast<cvCloneMatF*>(so->get_symbol("cvCloneMat"));
     static auto cvCreateData = reinterpret_cast<cvCreateDataF*>(so->get_symbol("cvCreateData"));
+    static auto cvReleaseData = reinterpret_cast<cvReleaseDataF*>(so->get_symbol("cvReleaseData"));
     static auto cvCopy = reinterpret_cast<cvCopyF*>(so->get_symbol("cvCopy"));
 
     float* inpData = inputs[0]->buffer();
@@ -235,13 +236,16 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             CvMat out_col_header, *out_col;
             out_col = cvReshape(out, &out_col_header, 2, channels * rows);
 
-            CvArr* mask = 0;
-            cvCopy(out_col, outSlice, mask);
+            cvCopy(out_col, outSlice, 0);
 
-            // cvReleaseMat(&inp);
-            // cvReleaseMat(&out);
-            // cvReleaseMat(&inpSlice);
-            // cvReleaseMat(&outSlice);
+            cvReleaseData(inp_col);
+            cvReleaseMat(&inp_col);
+
+            cvReleaseData(out);
+            cvReleaseMat(&out);
+
+            cvReleaseMat(&inpSlice);
+            cvReleaseMat(&outSlice);
         });
     } else if (dims.size() == 5 && numSignalDims == 2 && signalDimsData[0] == 2 && signalDimsData[1] == 3) {
         const int channels = dims[1];
@@ -269,7 +273,7 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
             cvReleaseMat(&inp);
             cvReleaseMat(&out);
         });
-    } else if (dims.size() == 4 && inputs[1]->getTensorDesc().getDims()[0] == 2 && signalDimsData[0] == 1 && signalDimsData[1] == 2) {
+    } else if (dims.size() == 4 && numSignalDims == 2 && signalDimsData[0] == 1 && signalDimsData[1] == 2) {
         int rows = dims[1];
         int cols = dims[2];
         int planeSize = rows * cols * 2;  // 2 is last dimension size
@@ -330,17 +334,11 @@ InferenceEngine::StatusCode FFTImpl::execute(std::vector<InferenceEngine::Blob::
         cvSetData(inp, reinterpret_cast<void*>(inpData), cols * 2 * sizeof(float));
         cvSetData(out, reinterpret_cast<void*>(outData), cols * 2 * sizeof(float));
 
-        if (centered)
-            fftshift(inp);
-
         if (inverse)
             cvDFT(inp, out, CV_DXT_INVERSE | CV_DXT_ROWS, 0);
         else
             cvDFT(inp, out, CV_DXT_FORWARD | CV_DXT_ROWS, 0);
         cvScale(out, out, 1.0 / sqrtf(cols), 0);
-
-        if (centered)
-            fftshift(out);
 
         cvReleaseMat(&inp);
         cvReleaseMat(&out);

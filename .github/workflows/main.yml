@@ -174,4 +174,4 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install twine
-          python3 -m twine upload --repository testpypi wheel*/*.whl --skip-existing
+          python3 -m twine upload wheel*/*.whl --skip-existing
