@@ -49,6 +49,10 @@ Extension::Extension() {
         ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
         return {std::make_shared<CalculateGridOp>(ng_inputs.at(0))};
     });
+    ngraph::onnx_import::register_operator(LSTSQOp::type_info.name, 1, "", [](const ngraph::onnx_import::Node& node) -> ngraph::OutputVector {
+        ngraph::OutputVector ng_inputs {node.get_ng_inputs()};
+        return {std::make_shared<LSTSQOp>(ng_inputs.at(0), ng_inputs.at(1))};
+    });
 }
 
 Extension::~Extension() {
@@ -59,6 +63,7 @@ Extension::~Extension() {
     ngraph::onnx_import::unregister_operator(SparseConvOp::type_info.name, 1, "org.open3d");
     ngraph::onnx_import::unregister_operator(SparseConvTransposeOp::type_info.name, 1, "org.open3d");
     ngraph::onnx_import::unregister_operator(CalculateGridOp::type_info.name, 1, "org.open3d");
+    ngraph::onnx_import::unregister_operator(LSTSQOp::type_info.name, 1, "");
 }
 
 //! [extension:GetVersion]
@@ -85,6 +90,7 @@ std::map<std::string, ngraph::OpSet> Extension::getOpSets() {
     opset.insert<SparseConvOp>();
     opset.insert<SparseConvTransposeOp>();
     opset.insert<CalculateGridOp>();
+    opset.insert<LSTSQOp>();
     opsets["extension"] = opset;
     return opsets;
 }
@@ -98,6 +104,7 @@ std::vector<std::string> Extension::getImplTypes(const std::shared_ptr<ngraph::N
         std::dynamic_pointer_cast<SparseConvOp>(node) ||
         std::dynamic_pointer_cast<SparseConvTransposeOp>(node) ||
         std::dynamic_pointer_cast<CalculateGridOp>(node) ||
+        std::dynamic_pointer_cast<LSTSQOp>(node) ||
         std::dynamic_pointer_cast<IFFTOp>(node) ||
         std::dynamic_pointer_cast<FFTOp>(node)) {
         return {"CPU"};
@@ -128,6 +135,9 @@ InferenceEngine::ILayerImpl::Ptr Extension::getImplementation(const std::shared_
     }
     if (std::dynamic_pointer_cast<CalculateGridOp>(node) && implType == "CPU") {
         return std::make_shared<CalculateGridImpl>(node);
+    }
+    if (std::dynamic_pointer_cast<LSTSQOp>(node) && implType == "CPU") {
+        return std::make_shared<LSTSQImpl>(node);
     }
     return nullptr;
 }
