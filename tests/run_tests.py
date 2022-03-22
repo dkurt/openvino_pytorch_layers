@@ -2,7 +2,6 @@
 from openvino_extensions import get_extensions_path
 from openvino.inference_engine import IECore
 
-import sys
 import subprocess
 import pytest
 from pathlib import Path
@@ -10,9 +9,7 @@ from pathlib import Path
 import numpy as np
 
 def convert_model():
-    subprocess.run([sys.executable,
-                    '-m',
-                    'mo',
+    subprocess.run(['mo',
                     '--input_model=model.onnx',
                     '--extension', Path(__file__).absolute().parent.parent / 'mo_extensions'],
                     check=True)
