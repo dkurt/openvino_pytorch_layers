@@ -3,6 +3,7 @@
 //
 
 #include "unpool.hpp"
+#include <ie_parallel.hpp>
 
 using namespace TemplateExtension;
 
@@ -43,12 +44,12 @@ bool Unpool::evaluate(ov::TensorVector& outputs, const ov::TensorVector& inputs)
     const float* poolInp = reinterpret_cast<float*>(inputs[0].data());
     const float* poolOut = reinterpret_cast<float*>(inputs[1].data());
     const float* inp     = reinterpret_cast<float*>(inputs[2].data());
-    float* out = outputs[0].data();
+    float* out = reinterpret_cast<float*>(outputs[0].data());
 
-    std::vector<size_t> poolInpDims = inputs[0].get_size();
-    std::vector<size_t> poolOutDims = inputs[1].get_size();
-    std::vector<size_t> inpDims = inputs[2].get_size();
-    std::vector<size_t> outDims = outputs[0].get_size();
+    std::vector<size_t> poolInpDims = inputs[0].get_shape();
+    std::vector<size_t> poolOutDims = inputs[1].get_shape();
+    std::vector<size_t> inpDims = inputs[2].get_shape();
+    std::vector<size_t> outDims = outputs[0].get_shape();
 
     const size_t batch    = poolInpDims[0];
     const size_t channels = poolInpDims[1];
@@ -58,9 +59,12 @@ bool Unpool::evaluate(ov::TensorVector& outputs, const ov::TensorVector& inputs)
     const size_t outWidth  = outDims[3];
     const size_t poolOutHeight = poolOutDims[2];
     const size_t poolOutWidth  = poolOutDims[3];
-    std::fill(mask.begin(), mask.end(), false);
-    memset(out, 0, outputs[0]->byteSize());
-    InferenceEngine::parallel_for(batch*channels, [&](size_t d) {
+
+    std::vector<bool> mask(inputs[1].get_size(), false);
+
+    memset(out, 0, outputs[0].get_byte_size());
+    for (int d = 0; d < batch*channels; ++d) {
+    // parallel_for(batch*channels, [&](size_t d) {
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
                 int poolOutIdx = (d * poolOutHeight + y / 2) * poolOutWidth + x / 2;
@@ -72,7 +76,7 @@ bool Unpool::evaluate(ov::TensorVector& outputs, const ov::TensorVector& inputs)
                 }
             }
         }
-    });
+    }
     return true;
 }
 
