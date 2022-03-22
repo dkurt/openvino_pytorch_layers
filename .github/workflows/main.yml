@@ -12,7 +12,7 @@ on:
 
 env:
   OPENVINO_VERSION: 2022.1.0
-  VERSION: 2022.1.0.1
+  VERSION: 2022.1.0.dev0
   DIST_VERSION: 2022.1.0_dev20220316
   DIST_LIN: https://storage.openvinotoolkit.org/repositories/openvino/packages/master/2022.1.0.dev20220316/l_openvino_toolkit_rhel8_dev_2022.1.0_dev20220316.tgz
   DIST_WIN: https://storage.openvinotoolkit.org/repositories/openvino/packages/master/2022.1.0.dev20220316/w_openvino_toolkit_windows_dev_2022.1.0_dev20220316.zip
@@ -130,34 +130,34 @@ jobs:
   #       name: "wheel_mac"
   #       path: "*.whl"
 
-  # test_lnx:
-  #   needs: build_lnx
-  #   runs-on: ubuntu-18.04
+  test_lnx:
+    needs: build_lnx
+    runs-on: ubuntu-18.04
 
-  #   steps:
-  #   - uses: actions/checkout@v2
+    steps:
+    - uses: actions/checkout@v2
 
-  #   - uses: actions/download-artifact@v2
-  #     with:
-  #         name: wheel_lnx
+    - uses: actions/download-artifact@v2
+      with:
+          name: wheel_lnx
 
-  #   - name: Install dependencies
-  #     run: |
-  #       sudo apt-get install -y python3-setuptools libopencv-dev
-  #       python3 -m pip install --upgrade pip
-  #       python3 -m pip install -r tests/requirements.txt
-  #       python3 -m pip install -U protobuf
-  #       python3 -m pip install openvino-dev[onnx]~=${{env.OPENVINO_VERSION}}
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y python3-setuptools libopencv-dev
+        python3 -m pip install --upgrade pip
+        python3 -m pip install -r tests/requirements.txt
+        python3 -m pip install -U protobuf
+        python3 -m pip install openvino-dev[onnx]~=${{env.OPENVINO_VERSION}}
 
-  #   # Also, remove "openvino_extensions" folder to avoid import confusion
-  #   - name: Install CPU extensions
-  #     run: |
-  #       rm -r openvino_extensions
-  #       python3 -m pip install *.whl
+    # Also, remove "openvino_extensions" folder to avoid import confusion
+    - name: Install CPU extensions
+      run: |
+        rm -r openvino_extensions
+        python3 -m pip install *.whl
 
-  #   - name: Test
-  #     run: |
-  #       python3 -m pytest tests/run_tests.py
+    - name: Test
+      run: |
+        python3 -m pytest tests/run_tests.py
 
   # publish:
   #   if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
