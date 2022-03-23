@@ -12,7 +12,7 @@ on:
 
 env:
   OPENVINO_VERSION: 2022.1.0
-  VERSION: 2022.1.0.dev2
+  VERSION: 2022.1.0.dev3
   DIST_VERSION: 2022.1.0_dev20220316
   DIST_WIN: https://registrationcenter-download.intel.com/akdlm/irc_nas/18618/w_openvino_toolkit_p_2022.1.0.643_offline.exe
   DIST_MAC: https://storage.openvinotoolkit.org/repositories/openvino/packages/master/2022.1.0.dev20220316/m_openvino_toolkit_osx_dev_2022.1.0_dev20220316.tgz
