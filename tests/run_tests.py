@@ -11,6 +11,7 @@ import numpy as np
 def convert_model():
     subprocess.run(['mo',
                     '--input_model=model.onnx',
+                    '--use_legacy_frontend',
                     '--extension', Path(__file__).absolute().parent.parent / 'mo_extensions'],
                     check=True)
 

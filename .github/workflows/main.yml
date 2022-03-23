@@ -6,6 +6,7 @@ name: CI
 # events but only for the master branch
 on:
   push:
+    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -161,7 +162,7 @@ jobs:
   publish:
     # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     # needs: [test_lnx, build_win, build_mac]
-    needs: [test_lnx]
+    needs: [build_lnx]
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/download-artifact@v2
