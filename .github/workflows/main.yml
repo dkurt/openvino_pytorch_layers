@@ -12,10 +12,9 @@ on:
 
 env:
   OPENVINO_VERSION: 2022.1.0
-  VERSION: 2022.1.0.dev0
+  VERSION: 2022.1.0.dev2
   DIST_VERSION: 2022.1.0_dev20220316
-  DIST_LIN: https://storage.openvinotoolkit.org/repositories/openvino/packages/master/2022.1.0.dev20220316/l_openvino_toolkit_rhel8_dev_2022.1.0_dev20220316.tgz
-  DIST_WIN: https://storage.openvinotoolkit.org/repositories/openvino/packages/master/2022.1.0.dev20220316/w_openvino_toolkit_windows_dev_2022.1.0_dev20220316.zip
+  DIST_WIN: https://registrationcenter-download.intel.com/akdlm/irc_nas/18618/w_openvino_toolkit_p_2022.1.0.643_offline.exe
   DIST_MAC: https://storage.openvinotoolkit.org/repositories/openvino/packages/master/2022.1.0.dev20220316/m_openvino_toolkit_osx_dev_2022.1.0_dev20220316.tgz
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
@@ -23,30 +22,40 @@ jobs:
   build_lnx:
     runs-on: ubuntu-18.04
     container:
-      centos:centos7.6.1810
+      centos:centos8.4.2105
 
     steps:
     - uses: actions/checkout@v2
 
     - name: Install dependencies
       run: |
-        yum install -y python3 wget
+        dnf -y --disablerepo '*' --enablerepo=extras swap centos-linux-repos centos-stream-repos
+        dnf -y distro-sync
+        yum install -y python3 wget cmake
         yum group install -y "Development Tools"
         python3 -m pip install --upgrade pip
-        wget -q https://github.com/Kitware/CMake/releases/download/v3.20.2/cmake-3.20.2-linux-x86_64.tar.gz
-        tar -xf cmake-3.20.2-linux-x86_64.tar.gz
 
     - name: Install OpenVINO
       run: |
-        wget ${{env.DIST_LIN}}
-        tar -xf *.tgz
+        tee > /tmp/openvino-2022.repo << EOF
+        [OpenVINO]
+        name=Intel(R) Distribution of OpenVINO 2022
+        baseurl=https://yum.repos.intel.com/openvino/2022
+        enabled=1
+        gpgcheck=1
+        repo_gpgcheck=1
+        gpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+        EOF
+        mv /tmp/openvino-2022.repo /etc/yum.repos.d
+        yum repolist | grep -i openvino
+        yum install -y yum-utils openvino-2022.1.0
 
     - name: Build CPU extensions
       run: |
-        source l_openvino_toolkit_rhel8_dev_${{env.DIST_VERSION}}/setupvars.sh
+        source /opt/intel/openvino_2022/setupvars.sh
         cd user_ie_extensions
         mkdir build && cd build
-        ../../cmake-3.20.2-linux-x86_64/bin/cmake .. -DCMAKE_BUILD_TYPE=Release
+        cmake .. -DCMAKE_BUILD_TYPE=Release
         make -j$(nproc --all)
 
     - name: Build wheel
@@ -143,11 +152,11 @@ jobs:
 
     - name: Install dependencies
       run: |
-        sudo apt-get install -y python3-setuptools libopencv-dev
+        sudo apt-get install -y python3-setuptools
         python3 -m pip install --upgrade pip
         python3 -m pip install -r tests/requirements.txt
         python3 -m pip install -U protobuf
-        python3 -m pip install openvino-dev[onnx]~=${{env.OPENVINO_VERSION}}
+        python3 -m pip install openvino-dev[onnx]==${{env.OPENVINO_VERSION}}
 
     # Also, remove "openvino_extensions" folder to avoid import confusion
     - name: Install CPU extensions
@@ -162,7 +171,7 @@ jobs:
   publish:
     # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     # needs: [test_lnx, build_win, build_mac]
-    needs: [build_lnx]
+    needs: [test_lnx]
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/download-artifact@v2
