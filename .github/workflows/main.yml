@@ -70,7 +70,7 @@ jobs:
     - name: Install OpenVINO
       run: |
         Invoke-WebRequest ${{env.DIST_WIN}} -OutFile openvino.exe
-        Start-Process -Wait -FilePath "openvino.exe" -ArgumentList "-s -a --silent --eula accept"
+        Start-Process -Wait -FilePath "openvino.exe" -ArgumentList "--s --a install --eula=accept --output=log.txt"
       shell: pwsh
 
     - name: Build CPU extensions
