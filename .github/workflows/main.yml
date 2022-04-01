@@ -71,6 +71,9 @@ jobs:
       run: |
         Invoke-WebRequest ${{env.DIST_WIN}} -OutFile openvino.exe
         Start-Process -Wait -FilePath "openvino.exe" -ArgumentList "--s --a install --eula=accept --output=log.txt"
+        ls "C:\Program Files (x86)"
+        ls "C:\Program Files (x86)\Intel"
+        ls "C:\Program Files (x86)\intel"
       shell: pwsh
 
     - name: Build CPU extensions
