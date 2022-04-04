@@ -48,8 +48,7 @@ class FFT(torch.autograd.Function):
         dims = torch.tensor(dims)
         dims = g.op("Constant", value_t=dims)
 
-        return g.op('IFFT' if inverse else 'FFT', x, dims,
-                    inverse_i=inverse, centered_i=centered)
+        return g.op('FFT', x, dims, inverse_i=inverse, centered_i=centered)
 
     @staticmethod
     def forward(self, x, inverse, centered, dims):

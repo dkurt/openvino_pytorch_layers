@@ -17,7 +17,7 @@ GridSample::GridSample(const ov::Output<ov::Node>& inp,
 void GridSample::validate_and_infer_types() {
     auto outShape = get_input_partial_shape(0);  // NC
     // Grid input has a shape NxHxWx2
-    auto gridShape = get_input_partial_shape(1).to_shape();
+    auto gridShape = get_input_partial_shape(1);
     outShape[2] = gridShape[1];  // H
     outShape[3] = gridShape[2];  // W
     set_output_type(0, get_input_element_type(0), outShape);
