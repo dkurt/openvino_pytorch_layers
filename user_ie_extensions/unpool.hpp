@@ -21,7 +21,7 @@ public:
     OPENVINO_OP("MaxPoolGrad");
 
 #ifdef OPENVINO_ONNX_FRONTEND_ENABLED
-    OPENVINO_FRAMEWORK_MAP(onnx)
+    OPENVINO_FRAMEWORK_MAP(onnx, "MaxPoolGrad")
 #endif
 
     Unpool() = default;

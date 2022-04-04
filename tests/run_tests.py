@@ -11,7 +11,6 @@ import numpy as np
 def convert_model():
     subprocess.run(['mo',
                     '--input_model=model.onnx',
-                    '--use_legacy_frontend',
                     '--extension', Path(__file__).absolute().parent.parent / 'mo_extensions'],
                     check=True)
 
@@ -37,9 +36,10 @@ def run_test(convert_ir=True, test_onnx=False, num_inputs=1, threshold=1e-5):
     net.reshape(shapes)
     exec_net = ie.compile_model(net, 'CPU')
 
-    out = exec_net.infer(inputs)
+    out = exec_net.infer_new_request(inputs)
     out = next(iter(out.values()))
 
+    assert ref.shape == out.shape
     diff = np.max(np.abs(ref - out))
     assert diff <= threshold
 
@@ -50,13 +50,13 @@ def test_unpool():
     run_test()
 
 
-def test_unpool_reshape():
-    from examples.unpool.export_model import export
-    export(mode='dynamic_size', shape=[5, 3, 6, 9])
-    run_test()
+# def test_unpool_reshape():
+#     from examples.unpool.export_model import export
+#     export(mode='dynamic_size', shape=[5, 3, 6, 9])
+#     run_test()
 
-    export(mode='dynamic_size', shape=[4, 3, 17, 8])
-    run_test(convert_ir=False)
+#     export(mode='dynamic_size', shape=[4, 3, 17, 8])
+#     run_test(convert_ir=False)
 
 # @pytest.mark.parametrize("shape", [[5, 120, 2], [4, 240, 320, 2], [3, 16, 240, 320, 2], [4, 5, 16, 31, 2]])
 # @pytest.mark.parametrize("inverse", [False, True])
@@ -93,11 +93,16 @@ def test_unpool_reshape():
 #     run_test(num_inputs=2, test_onnx=test_onnx)
 
 
-@pytest.mark.parametrize("in_channels", [1, 3])
-@pytest.mark.parametrize("filters", [1, 4])
-@pytest.mark.parametrize("kernel_size", [[3, 3, 3], [5, 5, 5], [2, 2, 2]])
-@pytest.mark.parametrize("normalize", [False, True])
-@pytest.mark.parametrize("out_pos", [None, 16])
+# @pytest.mark.parametrize("in_channels", [1, 3])
+# @pytest.mark.parametrize("filters", [1, 4])
+# @pytest.mark.parametrize("kernel_size", [[3, 3, 3], [5, 5, 5], [2, 2, 2]])
+# @pytest.mark.parametrize("normalize", [False, True])
+# @pytest.mark.parametrize("out_pos", [None, 16])
+@pytest.mark.parametrize("in_channels", [1])
+@pytest.mark.parametrize("filters", [1])
+@pytest.mark.parametrize("kernel_size", [[3, 3, 3]])
+@pytest.mark.parametrize("normalize", [False])
+@pytest.mark.parametrize("out_pos", [None])
 def test_sparse_conv(in_channels, filters, kernel_size, normalize, out_pos):
     from examples.sparse_conv.export_model import export
 
