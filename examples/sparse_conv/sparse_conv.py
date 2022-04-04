@@ -36,7 +36,7 @@ class SparseConvTransposeFunc(torch.autograd.Function):
         offset = cls.state_dict()["offset"]
         kernel = g.op("Constant", value_t=kernel)
         offset = g.op("Constant", value_t=offset)
-        return g.op("org.open3d::SparseConvTranspose", feat, in_pos, out_pos, kernel, offset)
+        return g.op("SparseConvTranspose", feat, in_pos, out_pos, kernel, offset)
 
     @staticmethod
     def forward(self, cls, feat, in_pos, out_pos, voxel_size):

@@ -11,7 +11,8 @@ import numpy as np
 def convert_model():
     subprocess.run(['mo',
                     '--input_model=model.onnx',
-                    '--extension', Path(__file__).absolute().parent.parent / 'mo_extensions'],
+                    # '--extension', "user_ie_extensions/build/libuser_cpu_extension.so"],
+                    '--extension', get_extensions_path()],
                     check=True)
 
 def run_test(convert_ir=True, test_onnx=False, num_inputs=1, threshold=1e-5):
@@ -30,6 +31,7 @@ def run_test(convert_ir=True, test_onnx=False, num_inputs=1, threshold=1e-5):
 
     ie = Core()
     ie.add_extension(get_extensions_path())
+    # ie.add_extension("user_ie_extensions/build/libuser_cpu_extension.so")
     # ie.set_config({'CONFIG_FILE': 'user_ie_extensions/gpu_extensions.xml'}, 'GPU')
 
     net = ie.read_model('model.onnx' if test_onnx else 'model.xml')
@@ -44,10 +46,10 @@ def run_test(convert_ir=True, test_onnx=False, num_inputs=1, threshold=1e-5):
     assert diff <= threshold
 
 
-def test_unpool():
-    from examples.unpool.export_model import export
-    export(mode='default')
-    run_test()
+# def test_unpool():
+#     from examples.unpool.export_model import export
+#     export(mode='default')
+#     run_test()
 
 
 # def test_unpool_reshape():
@@ -84,25 +86,20 @@ def test_unpool():
 #     run_test(num_inputs=2, test_onnx=test_onnx)
 
 
-# @pytest.mark.parametrize("shape", [[3, 2, 4, 8, 2], [3, 1, 4, 8, 2]])
-# @pytest.mark.parametrize("test_onnx", [False, True])
-# def test_complex_mul(shape, test_onnx):
-#     from examples.complex_mul.export_model import export
+@pytest.mark.parametrize("shape", [[3, 2, 4, 8, 2], [3, 1, 4, 8, 2]])
+@pytest.mark.parametrize("test_onnx", [False, True])
+def test_complex_mul(shape, test_onnx):
+    from examples.complex_mul.export_model import export
 
-#     export(other_shape=shape)
-#     run_test(num_inputs=2, test_onnx=test_onnx)
+    export(other_shape=shape)
+    run_test(num_inputs=2, test_onnx=test_onnx)
 
 
-# @pytest.mark.parametrize("in_channels", [1, 3])
-# @pytest.mark.parametrize("filters", [1, 4])
-# @pytest.mark.parametrize("kernel_size", [[3, 3, 3], [5, 5, 5], [2, 2, 2]])
-# @pytest.mark.parametrize("normalize", [False, True])
-# @pytest.mark.parametrize("out_pos", [None, 16])
-@pytest.mark.parametrize("in_channels", [1])
-@pytest.mark.parametrize("filters", [1])
-@pytest.mark.parametrize("kernel_size", [[3, 3, 3]])
-@pytest.mark.parametrize("normalize", [False])
-@pytest.mark.parametrize("out_pos", [None])
+@pytest.mark.parametrize("in_channels", [1, 3])
+@pytest.mark.parametrize("filters", [1, 4])
+@pytest.mark.parametrize("kernel_size", [[3, 3, 3], [5, 5, 5], [2, 2, 2]])
+@pytest.mark.parametrize("normalize", [False, True])
+@pytest.mark.parametrize("out_pos", [None, 16])
 def test_sparse_conv(in_channels, filters, kernel_size, normalize, out_pos):
     from examples.sparse_conv.export_model import export
 
@@ -112,18 +109,18 @@ def test_sparse_conv(in_channels, filters, kernel_size, normalize, out_pos):
     run_test(num_inputs=3, test_onnx=True, threshold=1e-4)
 
 
-# @pytest.mark.parametrize("in_channels", [1, 3])
-# @pytest.mark.parametrize("filters", [1, 4])
-# @pytest.mark.parametrize("kernel_size", [[3, 3, 3], [5, 5, 5]])
-# @pytest.mark.parametrize("normalize", [False])
-# @pytest.mark.parametrize("out_pos", [None, 16])
-# def test_sparse_conv_transpose(in_channels, filters, kernel_size, normalize, out_pos):
-#     from examples.sparse_conv.export_model import export
+@pytest.mark.parametrize("in_channels", [1, 3])
+@pytest.mark.parametrize("filters", [1, 4])
+@pytest.mark.parametrize("kernel_size", [[3, 3, 3], [5, 5, 5]])
+@pytest.mark.parametrize("normalize", [False])
+@pytest.mark.parametrize("out_pos", [None, 16])
+def test_sparse_conv_transpose(in_channels, filters, kernel_size, normalize, out_pos):
+    from examples.sparse_conv.export_model import export
 
-#     export(num_inp_points=1000, num_out_points=out_pos, max_grid_extent=4, in_channels=in_channels,
-#            filters=filters, kernel_size=kernel_size, normalize=normalize,
-#            transpose=True)
-#     run_test(num_inputs=3, test_onnx=True, threshold=1e-4)
+    export(num_inp_points=1000, num_out_points=out_pos, max_grid_extent=4, in_channels=in_channels,
+           filters=filters, kernel_size=kernel_size, normalize=normalize,
+           transpose=True)
+    run_test(num_inputs=3, test_onnx=True, threshold=1e-4)
 
 
 # def test_calculate_grid():

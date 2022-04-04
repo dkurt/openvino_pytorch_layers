@@ -2,23 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#include "sparse_conv.hpp"
+#include "sparse_conv_transpose.hpp"
 #include <ie_parallel.hpp>
 
 using namespace TemplateExtension;
 
 //! [op:ctor]
-SparseConv::SparseConv(const ov::Output<ov::Node>& features,
-                       const ov::Output<ov::Node>& inp_pos,
-                       const ov::Output<ov::Node>& out_pos,
-                       const ov::Output<ov::Node>& kernel,
-                       const ov::Output<ov::Node>& offset) : Op({features, inp_pos, out_pos, kernel, offset}) {
+SparseConvTranspose::SparseConvTranspose(const ov::Output<ov::Node>& features,
+                                         const ov::Output<ov::Node>& inp_pos,
+                                         const ov::Output<ov::Node>& out_pos,
+                                         const ov::Output<ov::Node>& kernel,
+                                         const ov::Output<ov::Node>& offset) : Op({features, inp_pos, out_pos, kernel, offset}) {
     constructor_validate_and_infer_types();
 }
 //! [op:ctor]
 
 //! [op:validate]
-void SparseConv::validate_and_infer_types() {
+void SparseConvTranspose::validate_and_infer_types() {
     auto outShape = get_input_partial_shape(2);
     auto kernelShape = get_input_partial_shape(3);
     outShape[1] = kernelShape[4];
@@ -27,20 +27,20 @@ void SparseConv::validate_and_infer_types() {
 //! [op:validate]
 
 //! [op:copy]
-std::shared_ptr<ov::Node> SparseConv::clone_with_new_inputs(const ov::OutputVector& new_args) const {
+std::shared_ptr<ov::Node> SparseConvTranspose::clone_with_new_inputs(const ov::OutputVector& new_args) const {
     OPENVINO_ASSERT(new_args.size() == 5, "Incorrect number of new arguments");
-    return std::make_shared<SparseConv>(new_args.at(0), new_args.at(1), new_args.at(2), new_args.at(3), new_args.at(4));
+    return std::make_shared<SparseConvTranspose>(new_args.at(0), new_args.at(1), new_args.at(2), new_args.at(3), new_args.at(4));
 }
 //! [op:copy]
 
 //! [op:visit_attributes]
-bool SparseConv::visit_attributes(ov::AttributeVisitor& visitor) {
+bool SparseConvTranspose::visit_attributes(ov::AttributeVisitor& visitor) {
     return true;
 }
 //! [op:visit_attributes]
 
 //! [op:evaluate]
-bool SparseConv::evaluate(ov::TensorVector& outputs, const ov::TensorVector& inputs) const {
+bool SparseConvTranspose::evaluate(ov::TensorVector& outputs, const ov::TensorVector& inputs) const {
     const float* features = reinterpret_cast<float*>(inputs[0].data());
     const float* inpPos = reinterpret_cast<float*>(inputs[1].data());
     const float* outPos = reinterpret_cast<float*>(inputs[2].data());
@@ -87,9 +87,9 @@ bool SparseConv::evaluate(ov::TensorVector& outputs, const ov::TensorVector& inp
                 yi - rh <= yj && yj <= yi + rh &&
                 zi - rd <= zj && zj <= zi + rd) {
 
-                const int w = std::min(static_cast<int>(xj - xi + kw * 0.5f), kw - 1);
-                const int h = std::min(static_cast<int>(yj - yi + kh * 0.5f), kh - 1);
-                const int d = std::min(static_cast<int>(zj - zi + kd * 0.5f), kd - 1);
+                const int w = kw - 1 - std::min(static_cast<int>(xj - xi + kw * 0.5f), kw - 1);
+                const int h = kh - 1 - std::min(static_cast<int>(yj - yi + kh * 0.5f), kh - 1);
+                const int d = kd - 1 - std::min(static_cast<int>(zj - zi + kd * 0.5f), kd - 1);
 
                 const float* featuresOffset = features + j * IC;
                 for (size_t ic = 0; ic < IC; ++ic) {
@@ -104,7 +104,7 @@ bool SparseConv::evaluate(ov::TensorVector& outputs, const ov::TensorVector& inp
     return true;
 }
 
-bool SparseConv::has_evaluate() const {
+bool SparseConvTranspose::has_evaluate() const {
     return true;
 }
 //! [op:evaluate]
