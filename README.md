@@ -14,17 +14,14 @@ Repository with guides to enable some layers from PyTorch in Intel OpenVINO:
 To create OpenVINO IR, use extra `--extension` flag to specify a path to Model Optimizer extensions that perform graph transformations and register custom layers.
 
 ```bash
-python3 /opt/intel/openvino/deployment_tools/model_optimizer/mo_onnx.py \
-    --input_model model.onnx \
-    --extension openvino_pytorch_layers/mo_extensions
+mo --input_model model.onnx --extension openvino_pytorch_layers/mo_extensions
 ```
 
 ## Custom CPU extensions
 
 You also need to build CPU extensions library which actually has C++ layers implementations:
 ```bash
-source /opt/intel/openvino/bin/setupvars.sh
-export TBB_DIR=/opt/intel/openvino/deployment_tools/inference_engine/external/tbb/cmake/
+source /opt/intel/openvino_2022/setupvars.sh
 
 cd user_ie_extensions
 mkdir build && cd build
@@ -34,11 +31,11 @@ cmake .. -DCMAKE_BUILD_TYPE=Release && make -j$(nproc --all)
 Add compiled extensions library to your project:
 
 ```python
-from openvino.inference_engine import IECore
+from openvino.runtime import Core
 
-ie = IECore()
-ie.add_extension('user_ie_extensions/build/libuser_cpu_extension.so', 'CPU')
+core = Core()
+core.add_extension('user_ie_extensions/build/libuser_cpu_extension.so')
 
-net = ie.read_network('model.xml', 'model.bin')
-exec_net = ie.load_network(net, 'CPU')
+model = ie.read_model('model.xml')
+compiled_model = ie.compile_model(model, 'CPU')
 ```

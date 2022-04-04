@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(TARGET_NAME "user_cpu_extension")
 
 find_package(OpenVINO REQUIRED)
-# find_package(TBB REQUIRED tbb tbbmalloc)
+find_package(TBB REQUIRED tbb tbbmalloc)
 
 file(GLOB_RECURSE SRC *.cpp)
 
@@ -23,6 +23,6 @@ endif()
 
 target_link_libraries(${TARGET_NAME} PRIVATE openvino::runtime
                                              openvino::frontend::onnx
-                                            #  ${TBB_IMPORTED_TARGETS}
+                                             ${TBB_IMPORTED_TARGETS}
                                           )
 # [cmake:extension]

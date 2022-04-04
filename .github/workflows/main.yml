@@ -31,8 +31,8 @@ jobs:
       run: |
         dnf -y --disablerepo '*' --enablerepo=extras swap centos-linux-repos centos-stream-repos
         dnf -y distro-sync
+        yum group install -y "Development Tools" --nobest
         yum install -y python3 wget cmake
-        yum group install -y "Development Tools"
         python3 -m pip install --upgrade pip
 
     - name: Install OpenVINO
@@ -169,7 +169,7 @@ jobs:
         python3 -m pytest tests/run_tests.py
 
   publish:
-    # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
     # needs: [test_lnx, build_win, build_mac]
     needs: [test_lnx]
     runs-on: ubuntu-18.04
