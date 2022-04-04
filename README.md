@@ -7,6 +7,7 @@ Repository with guides to enable some layers from PyTorch in Intel OpenVINO:
 * [nn.functional.grid_sample](https://github.com/dkurt/openvino_pytorch_layers/tree/master/examples/grid_sample)
 * [torchvision.ops.DeformConv2d](examples/deformable_conv)
 * [SparseConv](examples/sparse_conv) from [Open3D](https://github.com/isl-org/Open3D)
+* [torch.lstsq](https://pytorch.org/docs/stable/generated/torch.lstsq.html)
 
 
 ## OpenVINO Model Optimizer extension

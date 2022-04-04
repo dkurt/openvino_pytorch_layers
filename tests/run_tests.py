@@ -32,6 +32,7 @@ def run_test(convert_ir=True, test_onnx=False, num_inputs=1, threshold=1e-5):
     ref = np.load('ref.npy')
 
     ie = IECore()
+    print(get_extensions_path())
     ie.add_extension(get_extensions_path(), 'CPU')
     ie.set_config({'CONFIG_FILE': 'user_ie_extensions/gpu_extensions.xml'}, 'GPU')
 
@@ -145,3 +146,10 @@ def test_deformable_conv():
     )
     run_test(num_inputs=2, threshold=2e-5)
     run_test(num_inputs=2, test_onnx=True, threshold=2e-5)
+
+
+def test_lstsq():
+    from examples.lstsq.export_model import export
+
+    export(5, 1000)
+    run_test(num_inputs=2, test_onnx=True)

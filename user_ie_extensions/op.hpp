@@ -116,6 +116,20 @@ public:
     bool visit_attributes(ngraph::AttributeVisitor& visitor) override;
 };
 
+class LSTSQOp : public ngraph::op::Op {
+public:
+    static constexpr ngraph::NodeTypeInfo type_info{"lstsq", 0};
+    const ngraph::NodeTypeInfo& get_type_info() const override { return type_info;  }
+
+    LSTSQOp() = default;
+    LSTSQOp(const ngraph::Output<ngraph::Node>& B,
+            const ngraph::Output<ngraph::Node>& A);
+    void validate_and_infer_types() override;
+    std::shared_ptr<ngraph::Node> clone_with_new_inputs(const ngraph::OutputVector& new_args) const override;
+    bool visit_attributes(ngraph::AttributeVisitor& visitor) override;
+};
+
+
 //! [op:header]
 
 }  // namespace TemplateExtension

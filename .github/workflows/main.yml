@@ -69,9 +69,12 @@ jobs:
 
     - name: Install OpenVINO
       run: |
-        curl ${{env.DIST_WIN}} -o openvino.exe
-        start /WAIT openvino.exe --s --a install --eula=accept --output=log.txt
-      shell: cmd
+        Invoke-WebRequest ${{env.DIST_WIN}} -OutFile openvino.exe
+        Start-Process -Wait -FilePath "openvino.exe" -ArgumentList "-s --a --silent --eula accept --output=log.txt"
+        ls "C:\Program Files (x86)"
+        ls "C:\Program Files (x86)\Intel"
+        ls "C:\Program Files (x86)\intel"
+      shell: pwsh
 
     - name: Build CPU extensions
       run: |
