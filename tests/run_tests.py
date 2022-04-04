@@ -8,10 +8,6 @@ from pathlib import Path
 
 import numpy as np
 
-ie = Core()
-# ie.add_extension("user_ie_extensions/build/libuser_cpu_extension.so")
-ie.add_extension(get_extensions_path())
-
 def convert_model():
     subprocess.run(['mo',
                     '--input_model=model.onnx',
@@ -33,6 +29,9 @@ def run_test(convert_ir=True, test_onnx=False, num_inputs=1, threshold=1e-5):
 
     ref = np.load('ref.npy')
 
+    ie = Core()
+    # ie.add_extension("user_ie_extensions/build/libuser_cpu_extension.so")
+    ie.add_extension(get_extensions_path())
     # ie.set_config({'CONFIG_FILE': 'user_ie_extensions/gpu_extensions.xml'}, 'GPU')
 
     net = ie.read_model('model.onnx' if test_onnx else 'model.xml')
