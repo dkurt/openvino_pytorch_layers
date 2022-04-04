@@ -3,7 +3,7 @@
 //
 
 #include "complex_mul.hpp"
-#include <ie_parallel.hpp>
+// #include <ie_parallel.hpp>
 #include <ie_common.h>
 
 using namespace TemplateExtension;
@@ -50,7 +50,8 @@ bool ComplexMultiplication::evaluate(ov::TensorVector& outputs, const ov::Tensor
     // x1 = x_r * y_r - x_i * y_i
     // x2 = x_r * y_i + x_i * y_r
     if (channels0 == channels1)
-        InferenceEngine::parallel_for(channels0 * batch, [&](size_t ch) {
+        // InferenceEngine::parallel_for(channels0 * batch, [&](size_t ch) {
+        for (size_t ch = 0; ch < channels0 * batch; ++ch) {
             for (int i = 0; i < spatialSize; ++i) {
                     int outIdx = (ch * spatialSize + i) * 2;
                     float real0 = inp0[outIdx];
@@ -60,9 +61,10 @@ bool ComplexMultiplication::evaluate(ov::TensorVector& outputs, const ov::Tensor
                     out[outIdx] = real0 * real1 - imag0 * imag1;
                     out[outIdx + 1] = real0 * imag1 + imag0 * real1;
             }
-        });
+        }
     else if (channels1 == 1)
-        InferenceEngine::parallel_for(channels0 * batch, [&](size_t ch) {
+        // InferenceEngine::parallel_for(channels0 * batch, [&](size_t ch) {
+        for (size_t ch = 0; ch < channels0 * batch; ++ch) {
             int b = ch / channels0;
             for (int i = 0; i < spatialSize; ++i) {
                 int outIdx = (ch * spatialSize + i) * 2;
@@ -74,7 +76,7 @@ bool ComplexMultiplication::evaluate(ov::TensorVector& outputs, const ov::Tensor
                 out[outIdx] = real0 * real1 - imag0 * imag1;
                 out[outIdx + 1] = real0 * imag1 + imag0 * real1;
             }
-        });
+        }
     else
         IE_THROW() << "Wrong number of channels for second input!";
 

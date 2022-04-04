@@ -3,7 +3,7 @@
 //
 
 #include "unpool.hpp"
-#include <ie_parallel.hpp>
+// #include <ie_parallel.hpp>
 
 using namespace TemplateExtension;
 
@@ -63,7 +63,8 @@ bool Unpool::evaluate(ov::TensorVector& outputs, const ov::TensorVector& inputs)
     std::vector<bool> mask(inputs[1].get_size(), false);
 
     memset(out, 0, outputs[0].get_byte_size());
-    InferenceEngine::parallel_for(batch*channels, [&](size_t d) {
+    // InferenceEngine::parallel_for(batch*channels, [&](size_t d) {
+    for (size_t d = 0; d < batch * channels; ++d) {
         for (int y = 0; y < height; ++y) {
             for (int x = 0; x < width; ++x) {
                 int poolOutIdx = (d * poolOutHeight + y / 2) * poolOutWidth + x / 2;
@@ -75,7 +76,7 @@ bool Unpool::evaluate(ov::TensorVector& outputs, const ov::TensorVector& inputs)
                 }
             }
         }
-    });
+    }
     return true;
 }
 

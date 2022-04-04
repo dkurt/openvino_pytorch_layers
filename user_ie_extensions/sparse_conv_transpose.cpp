@@ -3,7 +3,6 @@
 //
 
 #include "sparse_conv_transpose.hpp"
-#include <ie_parallel.hpp>
 
 using namespace TemplateExtension;
 
