@@ -96,18 +96,18 @@ def run_test(convert_ir=True, test_onnx=False, num_inputs=1, threshold=1e-5):
 #     run_test(num_inputs=2, test_onnx=test_onnx)
 
 
-# @pytest.mark.parametrize("in_channels", [1, 3])
-# @pytest.mark.parametrize("filters", [1, 4])
-# @pytest.mark.parametrize("kernel_size", [[3, 3, 3], [5, 5, 5], [2, 2, 2]])
-# @pytest.mark.parametrize("normalize", [False, True])
-# @pytest.mark.parametrize("out_pos", [None, 16])
-# def test_sparse_conv(in_channels, filters, kernel_size, normalize, out_pos):
-#     from examples.sparse_conv.export_model import export
+@pytest.mark.parametrize("in_channels", [1, 3])
+@pytest.mark.parametrize("filters", [1, 4])
+@pytest.mark.parametrize("kernel_size", [[3, 3, 3], [5, 5, 5], [2, 2, 2]])
+@pytest.mark.parametrize("normalize", [False, True])
+@pytest.mark.parametrize("out_pos", [None, 16])
+def test_sparse_conv(in_channels, filters, kernel_size, normalize, out_pos):
+    from examples.sparse_conv.export_model import export
 
-#     export(num_inp_points=1000, num_out_points=out_pos, max_grid_extent=4, in_channels=in_channels,
-#            filters=filters, kernel_size=kernel_size, normalize=normalize,
-#            transpose=False)
-#     run_test(num_inputs=3, test_onnx=True, threshold=1e-4)
+    export(num_inp_points=1000, num_out_points=out_pos, max_grid_extent=4, in_channels=in_channels,
+           filters=filters, kernel_size=kernel_size, normalize=normalize,
+           transpose=False)
+    run_test(num_inputs=3, test_onnx=True, threshold=1e-4)
 
 
 # @pytest.mark.parametrize("in_channels", [1, 3])
