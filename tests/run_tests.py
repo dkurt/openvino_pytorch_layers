@@ -8,6 +8,10 @@ from pathlib import Path
 
 import numpy as np
 
+ie = Core()
+# ie.add_extension("user_ie_extensions/build/libuser_cpu_extension.so")
+ie.add_extension(get_extensions_path())
+
 def convert_model():
     subprocess.run(['mo',
                     '--input_model=model.onnx',
@@ -29,9 +33,6 @@ def run_test(convert_ir=True, test_onnx=False, num_inputs=1, threshold=1e-5):
 
     ref = np.load('ref.npy')
 
-    ie = Core()
-    ie.add_extension(get_extensions_path())
-    # ie.add_extension("user_ie_extensions/build/libuser_cpu_extension.so")
     # ie.set_config({'CONFIG_FILE': 'user_ie_extensions/gpu_extensions.xml'}, 'GPU')
 
     net = ie.read_model('model.onnx' if test_onnx else 'model.xml')
@@ -86,47 +87,47 @@ def run_test(convert_ir=True, test_onnx=False, num_inputs=1, threshold=1e-5):
 #     run_test(num_inputs=2, test_onnx=test_onnx)
 
 
-@pytest.mark.parametrize("shape", [[3, 2, 4, 8, 2], [3, 1, 4, 8, 2]])
-@pytest.mark.parametrize("test_onnx", [False, True])
-def test_complex_mul(shape, test_onnx):
-    from examples.complex_mul.export_model import export
+# @pytest.mark.parametrize("shape", [[3, 2, 4, 8, 2], [3, 1, 4, 8, 2]])
+# @pytest.mark.parametrize("test_onnx", [False, True])
+# def test_complex_mul(shape, test_onnx):
+#     from examples.complex_mul.export_model import export
 
-    export(other_shape=shape)
-    run_test(num_inputs=2, test_onnx=test_onnx)
-
-
-@pytest.mark.parametrize("in_channels", [1, 3])
-@pytest.mark.parametrize("filters", [1, 4])
-@pytest.mark.parametrize("kernel_size", [[3, 3, 3], [5, 5, 5], [2, 2, 2]])
-@pytest.mark.parametrize("normalize", [False, True])
-@pytest.mark.parametrize("out_pos", [None, 16])
-def test_sparse_conv(in_channels, filters, kernel_size, normalize, out_pos):
-    from examples.sparse_conv.export_model import export
-
-    export(num_inp_points=1000, num_out_points=out_pos, max_grid_extent=4, in_channels=in_channels,
-           filters=filters, kernel_size=kernel_size, normalize=normalize,
-           transpose=False)
-    run_test(num_inputs=3, test_onnx=True, threshold=1e-4)
+#     export(other_shape=shape)
+#     run_test(num_inputs=2, test_onnx=test_onnx)
 
 
-@pytest.mark.parametrize("in_channels", [1, 3])
-@pytest.mark.parametrize("filters", [1, 4])
-@pytest.mark.parametrize("kernel_size", [[3, 3, 3], [5, 5, 5]])
-@pytest.mark.parametrize("normalize", [False])
-@pytest.mark.parametrize("out_pos", [None, 16])
-def test_sparse_conv_transpose(in_channels, filters, kernel_size, normalize, out_pos):
-    from examples.sparse_conv.export_model import export
+# @pytest.mark.parametrize("in_channels", [1, 3])
+# @pytest.mark.parametrize("filters", [1, 4])
+# @pytest.mark.parametrize("kernel_size", [[3, 3, 3], [5, 5, 5], [2, 2, 2]])
+# @pytest.mark.parametrize("normalize", [False, True])
+# @pytest.mark.parametrize("out_pos", [None, 16])
+# def test_sparse_conv(in_channels, filters, kernel_size, normalize, out_pos):
+#     from examples.sparse_conv.export_model import export
 
-    export(num_inp_points=1000, num_out_points=out_pos, max_grid_extent=4, in_channels=in_channels,
-           filters=filters, kernel_size=kernel_size, normalize=normalize,
-           transpose=True)
-    run_test(num_inputs=3, test_onnx=True, threshold=1e-4)
+#     export(num_inp_points=1000, num_out_points=out_pos, max_grid_extent=4, in_channels=in_channels,
+#            filters=filters, kernel_size=kernel_size, normalize=normalize,
+#            transpose=False)
+#     run_test(num_inputs=3, test_onnx=True, threshold=1e-4)
 
 
-# def test_calculate_grid():
-#     from examples.calculate_grid.export_model import export
-#     export(num_points=10, max_grid_extent=5)
-#     run_test(test_onnx=True)
+# @pytest.mark.parametrize("in_channels", [1, 3])
+# @pytest.mark.parametrize("filters", [1, 4])
+# @pytest.mark.parametrize("kernel_size", [[3, 3, 3], [5, 5, 5]])
+# @pytest.mark.parametrize("normalize", [False])
+# @pytest.mark.parametrize("out_pos", [None, 16])
+# def test_sparse_conv_transpose(in_channels, filters, kernel_size, normalize, out_pos):
+#     from examples.sparse_conv.export_model import export
+
+#     export(num_inp_points=1000, num_out_points=out_pos, max_grid_extent=4, in_channels=in_channels,
+#            filters=filters, kernel_size=kernel_size, normalize=normalize,
+#            transpose=True)
+#     run_test(num_inputs=3, test_onnx=True, threshold=1e-4)
+
+
+def test_calculate_grid():
+    from examples.calculate_grid.export_model import export
+    export(num_points=10, max_grid_extent=5)
+    run_test(test_onnx=True)
 
 
 # def test_deformable_conv():

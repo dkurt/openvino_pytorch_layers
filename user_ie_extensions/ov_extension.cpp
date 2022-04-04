@@ -10,6 +10,7 @@
 #include "sparse_conv.hpp"
 #include "sparse_conv_transpose.hpp"
 #include "complex_mul.hpp"
+#include "calculate_grid.hpp"
 
 // clang-format off
 //! [ov_extension:entry_point]
@@ -19,11 +20,13 @@ OPENVINO_CREATE_EXTENSIONS(
         std::make_shared<ov::OpExtension<TemplateExtension::SparseConv>>(),
         std::make_shared<ov::OpExtension<TemplateExtension::SparseConvTranspose>>(),
         std::make_shared<ov::OpExtension<TemplateExtension::ComplexMultiplication>>(),
+        std::make_shared<ov::OpExtension<TemplateExtension::CalculateGrid>>(),
 
         // Register operaton mapping, required when converted from framework model format
         std::make_shared<ov::frontend::OpExtension<TemplateExtension::SparseConv>>(),
         std::make_shared<ov::frontend::OpExtension<TemplateExtension::SparseConvTranspose>>(),
-        std::make_shared<ov::frontend::OpExtension<TemplateExtension::ComplexMultiplication>>()
+        std::make_shared<ov::frontend::OpExtension<TemplateExtension::ComplexMultiplication>>(),
+        std::make_shared<ov::frontend::OpExtension<TemplateExtension::CalculateGrid>>()
     }));
 //! [ov_extension:entry_point]
 // clang-format on
