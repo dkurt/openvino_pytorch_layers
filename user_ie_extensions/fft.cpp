@@ -169,7 +169,8 @@ std::shared_ptr<ov::Node> FFT::clone_with_new_inputs(const ov::OutputVector& new
 
 //! [op:visit_attributes]
 bool FFT::visit_attributes(ov::AttributeVisitor& visitor) {
-    int inverse_i, centered_i;
+    int inverse_i = static_cast<int>(inverse);
+    int centered_i = static_cast<int>(centered);
     visitor.on_attribute("inverse", inverse_i);
     visitor.on_attribute("centered", centered_i);
     inverse = static_cast<bool>(inverse_i);
