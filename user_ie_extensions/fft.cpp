@@ -169,6 +169,11 @@ std::shared_ptr<ov::Node> FFT::clone_with_new_inputs(const ov::OutputVector& new
 
 //! [op:visit_attributes]
 bool FFT::visit_attributes(ov::AttributeVisitor& visitor) {
+    int inverse_i, centered_i;
+    visitor.on_attribute("inverse", inverse_i);
+    visitor.on_attribute("centered", centered_i);
+    inverse = static_cast<bool>(inverse_i);
+    centered = static_cast<bool>(centered_i);
     return true;
 }
 //! [op:visit_attributes]
@@ -187,7 +192,11 @@ bool FFT::evaluate(ov::TensorVector& outputs, const ov::TensorVector& inputs) co
     static auto cvCopy = reinterpret_cast<cvCopyF*>(so->get_symbol("cvCopy"));
 
     float* inpData = reinterpret_cast<float*>(inputs[0].data());
-    int64_t* signalDimsData = reinterpret_cast<int64_t*>(inputs[1].data());
+
+    if (inputs[1].get_element_type() != ov::element::i32)
+        IE_THROW() << "Unexpected dims type: " << inputs[1].get_element_type();
+
+    int32_t* signalDimsData = reinterpret_cast<int32_t*>(inputs[1].data());
     float* outData = reinterpret_cast<float*>(outputs[0].data());
     std::vector<size_t> dims = inputs[0].get_shape();
     const size_t numSignalDims = inputs[1].get_shape()[0];
@@ -197,7 +206,10 @@ bool FFT::evaluate(ov::TensorVector& outputs, const ov::TensorVector& inputs) co
                                (numSignalDims == 2 && signalDimsData[0] == 1 && signalDimsData[1] == 2)) ||
           dims.size() == 5 && ((numSignalDims == 2 && signalDimsData[0] == 1 && signalDimsData[1] == 2) ||
                                (numSignalDims == 2 && signalDimsData[0] == 2 && signalDimsData[1] == 3)))) {
-        IE_THROW() << "Unsupported configuration!";
+        std::ostringstream ss;
+        for (size_t i = 0; i < numSignalDims; ++i)
+            ss << signalDimsData[i] << " ";
+        IE_THROW() << "Unsupported configuration: Input dims " << dims.size() << " and signal dims " << ss.str();
     }
 
     const int batch = dims[0];
