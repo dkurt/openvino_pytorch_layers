@@ -8,7 +8,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(TARGET_NAME "user_cpu_extension")
 
 find_package(OpenVINO REQUIRED)
-find_package(OpenCV QUIET COMPONENTS core)
+find_package(OpenCV REQUIRED COMPONENTS core)
 # find_package(TBB REQUIRED tbb tbbmalloc)
 
 file(GLOB_RECURSE SRC *.cpp)
