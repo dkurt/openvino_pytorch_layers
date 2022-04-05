@@ -63,7 +63,7 @@ def run_test(convert_ir=True, test_onnx=False, num_inputs=1, threshold=1e-5):
 @pytest.mark.parametrize("shape", [[5, 120, 2], [4, 240, 320, 2], [3, 16, 240, 320, 2], [4, 5, 16, 31, 2]])
 @pytest.mark.parametrize("inverse", [False, True])
 @pytest.mark.parametrize("centered", [False, True])
-@pytest.mark.parametrize("test_onnx", [False, True])
+@pytest.mark.parametrize("test_onnx", [True])
 @pytest.mark.parametrize("dims", [[1], [1, 2], [2, 3]])
 def test_fft(shape, inverse, centered, test_onnx, dims):
     from examples.fft.export_model import export

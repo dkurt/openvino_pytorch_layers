@@ -28,8 +28,8 @@ public:
     bool has_evaluate() const override;
 
 private:
-    bool inverse;
-    bool centered;
+    bool inverse = false;
+    bool centered = false;
 };
 //! [op:header]
 
