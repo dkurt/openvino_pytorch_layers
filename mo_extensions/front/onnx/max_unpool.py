@@ -1,10 +1,10 @@
 # mo_extensions/front/onnx/max_unpool.py
 import numpy as np
 
-from mo.front.common.replacement import FrontReplacementSubgraph
-from mo.graph.graph import Graph
+from openvino.tools.mo.front.common.replacement import FrontReplacementSubgraph
+from openvino.tools.mo.graph.graph import Graph
 from mo_extensions.ops.MaxPoolGrad import MaxPoolGrad
-from mo.front.onnx.extractors.utils import onnx_attr
+from openvino.tools.mo.front.onnx.extractors.utils import onnx_attr
 
 class MaxUnpool(FrontReplacementSubgraph):
     enabled = True

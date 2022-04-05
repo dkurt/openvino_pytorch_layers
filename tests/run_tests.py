@@ -1,8 +1,7 @@
 # NOTE: import order is critical for now: extensions, openvino and only then numpy
 from openvino_extensions import get_extensions_path
-from openvino.inference_engine import IECore
+from openvino.runtime import Core
 
-import sys
 import subprocess
 import pytest
 from pathlib import Path
@@ -10,11 +9,10 @@ from pathlib import Path
 import numpy as np
 
 def convert_model():
-    subprocess.run([sys.executable,
-                    '-m',
-                    'mo',
+    subprocess.run(['mo',
                     '--input_model=model.onnx',
-                    '--extension', Path(__file__).absolute().parent.parent / 'mo_extensions'],
+                    # '--extension', "user_ie_extensions/build/libuser_cpu_extension.so"],
+                    '--extension', get_extensions_path()],
                     check=True)
 
 def run_test(convert_ir=True, test_onnx=False, num_inputs=1, threshold=1e-5):
@@ -31,34 +29,36 @@ def run_test(convert_ir=True, test_onnx=False, num_inputs=1, threshold=1e-5):
 
     ref = np.load('ref.npy')
 
-    ie = IECore()
-    ie.add_extension(get_extensions_path(), 'CPU')
-    ie.set_config({'CONFIG_FILE': 'user_ie_extensions/gpu_extensions.xml'}, 'GPU')
+    ie = Core()
+    # ie.add_extension("user_ie_extensions/build/libuser_cpu_extension.so")
+    ie.add_extension(get_extensions_path())
+    # ie.set_config({'CONFIG_FILE': 'user_ie_extensions/gpu_extensions.xml'}, 'GPU')
 
-    net = ie.read_network('model.onnx' if test_onnx else 'model.xml')
+    net = ie.read_model('model.onnx' if test_onnx else 'model.xml')
     net.reshape(shapes)
-    exec_net = ie.load_network(net, 'CPU')
+    exec_net = ie.compile_model(net, 'CPU')
 
-    out = exec_net.infer(inputs)
+    out = exec_net.infer_new_request(inputs)
     out = next(iter(out.values()))
 
+    assert ref.shape == out.shape
     diff = np.max(np.abs(ref - out))
     assert diff <= threshold
 
 
-def test_unpool():
-    from examples.unpool.export_model import export
-    export(mode='default')
-    run_test()
+# def test_unpool():
+#     from examples.unpool.export_model import export
+#     export(mode='default')
+#     run_test()
 
 
-def test_unpool_reshape():
-    from examples.unpool.export_model import export
-    export(mode='dynamic_size', shape=[5, 3, 6, 9])
-    run_test()
+# def test_unpool_reshape():
+#     from examples.unpool.export_model import export
+#     export(mode='dynamic_size', shape=[5, 3, 6, 9])
+#     run_test()
 
-    export(mode='dynamic_size', shape=[4, 3, 17, 8])
-    run_test(convert_ir=False)
+#     export(mode='dynamic_size', shape=[4, 3, 17, 8])
+#     run_test(convert_ir=False)
 
 @pytest.mark.parametrize("shape", [[5, 120, 2], [4, 240, 320, 2], [3, 16, 240, 320, 2], [4, 5, 16, 31, 2]])
 @pytest.mark.parametrize("inverse", [False, True])

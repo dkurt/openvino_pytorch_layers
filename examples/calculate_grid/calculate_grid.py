@@ -5,7 +5,7 @@ import torch.nn.functional as F
 class CalculateGrid(torch.autograd.Function):
     @staticmethod
     def symbolic(g, in_positions):
-        return g.op("org.open3d::calculate_grid", in_positions)
+        return g.op("CalculateGrid", in_positions)
 
     @staticmethod
     def forward(self, in_positions):

@@ -11,43 +11,58 @@ on:
     branches: [ master ]
 
 env:
-  OPENVINO_VERSION: 2021.4.2
-  VERSION: 2021.4.2.5
-  DIST_VERSION: 2021.4.752
-  DIST_WIN: https://registrationcenter-download.intel.com/akdlm/irc_nas/18320/w_openvino_toolkit_p_2021.4.752.exe
-  DIST_MAC: https://registrationcenter-download.intel.com/akdlm/irc_nas/18317/m_openvino_toolkit_p_2021.4.752.dmg
+  OPENVINO_VERSION: 2022.1.0
+  OPENCV_VERSION: 4.5.5
+  VERSION: 2022.1.0.dev3
+  DIST_WIN: https://registrationcenter-download.intel.com/akdlm/irc_nas/18618/w_openvino_toolkit_p_2022.1.0.643_offline.exe
+  DIST_MAC: https://registrationcenter-download.intel.com/akdlm/irc_nas/18616/m_openvino_toolkit_p_2022.1.0.643_offline.dmg
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   build_lnx:
     runs-on: ubuntu-18.04
     container:
-      centos:centos7.6.1810
+      centos:centos8.4.2105
 
     steps:
     - uses: actions/checkout@v2
 
     - name: Install dependencies
       run: |
-        yum install -y python3 wget
-        yum group install -y "Development Tools"
+        dnf -y --disablerepo '*' --enablerepo=extras swap centos-linux-repos centos-stream-repos
+        dnf -y distro-sync
+        yum group install -y "Development Tools" --nobest
+        yum install -y python3 wget cmake
         python3 -m pip install --upgrade pip
-        wget -q https://github.com/Kitware/CMake/releases/download/v3.20.2/cmake-3.20.2-linux-x86_64.tar.gz
-        tar -xf cmake-3.20.2-linux-x86_64.tar.gz
 
     - name: Install OpenVINO
       run: |
-        yum install -y yum-utils
-        yum-config-manager --add-repo https://yum.repos.intel.com/openvino/2021/setup/intel-openvino-2021.repo
-        rpm --import https://yum.repos.intel.com/openvino/2021/setup/RPM-GPG-KEY-INTEL-OPENVINO-2021
-        yum install -y intel-openvino-runtime-centos7-${{env.DIST_VERSION}}.x86_64
+        tee > /tmp/openvino-2022.repo << EOF
+        [OpenVINO]
+        name=Intel(R) Distribution of OpenVINO 2022
+        baseurl=https://yum.repos.intel.com/openvino/2022
+        enabled=1
+        gpgcheck=1
+        repo_gpgcheck=1
+        gpgkey=https://yum.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB
+        EOF
+        mv /tmp/openvino-2022.repo /etc/yum.repos.d
+        yum repolist | grep -i openvino
+        yum install -y yum-utils openvino-2022.1.0
+
+    - name: Build OpenCV
+      run: |
+        git clone https://github.com/opencv/opencv/ -b ${{env.OPENCV_VERSION}} --depth 1
+        mkdir opencv_build && cd opencv_build
+        cmake ../opencv -DCMAKE_BUILD_TYPE=Release -DBUILD_LIST=core
+        make -j$(nproc --all) install
 
     - name: Build CPU extensions
       run: |
-        source /opt/intel/openvino_2021/bin/setupvars.sh
+        source /opt/intel/openvino_2022/setupvars.sh
         cd user_ie_extensions
         mkdir build && cd build
-        ../../cmake-3.20.2-linux-x86_64/bin/cmake .. -DCMAKE_BUILD_TYPE=Release
+        cmake .. -DCMAKE_BUILD_TYPE=Release
         make -j$(nproc --all)
 
     - name: Build wheel
@@ -69,16 +84,25 @@ jobs:
 
     - name: Install OpenVINO
       run: |
-        curl ${{env.DIST_WIN}} -o openvino.exe
-        start /WAIT openvino.exe --s --a install --eula=accept --output=log.txt
+        Invoke-WebRequest ${{env.DIST_WIN}} -OutFile openvino.exe
+        Start-Process -Wait -FilePath "openvino.exe" -ArgumentList "-s -a --silent --eula accept"
+      shell: pwsh
+
+    - name: Build OpenCV
+      run: |
+        git clone https://github.com/opencv/opencv/ -b ${{env.OPENCV_VERSION}} --depth 1
+        mkdir opencv_build && cd opencv_build
+        cmake ..\\opencv -DCMAKE_BUILD_TYPE=Release -DBUILD_LIST=core
+        cmake --build . --config Release -j 2
+        cmake --install . --prefix "C:\opencv_install"
       shell: cmd
 
     - name: Build CPU extensions
       run: |
-        call "C:\Program Files (x86)\Intel\openvino_2021\bin\setupvars.bat"
+        call "C:\Program Files (x86)\Intel\openvino_2022\setupvars.bat"
         cd user_ie_extensions
         mkdir build && cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release
+        cmake .. -DOpenCV_DIR="C:\opencv_install"
         cmake --build . --config Release -j 2
       shell: cmd
 
@@ -107,12 +131,19 @@ jobs:
       run: |
         curl ${{env.DIST_MAC}} -o openvino.dmg
         hdiutil attach openvino.dmg
-        cd /Volumes/m_openvino_toolkit_p_${{env.DIST_VERSION}}/m_openvino_toolkit_p_${{env.DIST_VERSION}}.app/Contents/MacOS/
-        sudo ./install.sh -s silent.cfg --accept_eula
+        cd /Volumes/m_openvino_toolkit_p_2022.1.0.643_offline/bootstrapper.app/Contents/MacOS/
+        sudo ./install.sh -s --eula=accept
+
+    - name: Build OpenCV
+      run: |
+        git clone https://github.com/opencv/opencv/ -b ${{env.OPENCV_VERSION}} --depth 1
+        mkdir opencv_build && cd opencv_build
+        cmake ../opencv -DCMAKE_BUILD_TYPE=Release -DBUILD_LIST=core
+        make -j$(nproc --all) install
 
     - name: Build CPU extensions
       run: |
-        source /opt/intel/openvino_2021/bin/setupvars.sh
+        source /opt/intel/openvino_2022/setupvars.sh
         cd user_ie_extensions
         mkdir build && cd build
         cmake .. -DCMAKE_BUILD_TYPE=Release
