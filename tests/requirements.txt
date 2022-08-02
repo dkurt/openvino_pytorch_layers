@@ -1,5 +1,4 @@
-torch==1.8.1
-torchvision==0.9.1
-open3d==0.14.1
+torch==1.12.0
+torchvision
 tensorboard
 pytest
