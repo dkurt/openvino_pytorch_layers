@@ -1,3 +1,7 @@
+:warning: Source code will be continued to be supported and developed in [OpenVINO contrib](https://github.com/openvinotoolkit/openvino_contrib/tree/master/modules/custom_operations). Thanks for all who used.
+
+---
+
 Repository with guides to enable some layers from PyTorch in Intel OpenVINO:
 
 [![CI](https://github.com/dkurt/openvino_pytorch_layers/workflows/CI/badge.svg?branch=master)](https://github.com/dkurt/openvino_pytorch_layers/actions?query=branch%3Amaster)
